@@ -3,6 +3,8 @@ import csv
 import json
 import base64
 from cryptography.fernet import Fernet
+import pandas as pd
+from sqlalchemy import create_engine
 
 
 
@@ -43,36 +45,19 @@ try:
     server = 'PFDusSQL,50432'
     database = 'fet_test'
 
-    #
-    # Aufbau der Verbindung
-    #
-    conn = pyodbc.connect(f'DRIVER={{SQL Server}};SERVER={server};DATABASE={database};UID={username};PWD={password}')
+    connection_string = f'mssql+pyodbc://{username}:{password}@{server}/{database}?driver=SQL+Server'
+    sql_query = load_query(r'\\V-Processes\\ERP_Queries\\SKU_Carton_4_QS.sql')
 
-    cursor = conn.cursor()
+    engine = create_engine(connection_string)
+    with engine.connect() as conn:
+        df = pd.read_sql_query(sql_query, conn)
+        csv_filename = r'\\pfduskommi\Promodoro.Export\Warehouse\SKU_Carton_4_QS.csv'
+        df.to_csv(csv_filename, sep=';', index=False, encoding='utf-8-sig')
 
-    sql_query = load_query(f'\\\\V-Processes\\ERP_Queries\\SKU_Carton_4_QS.sql')
-
-    cursor.execute(sql_query)
-    #print(sql_query)
-    rows = cursor.fetchall()
-    #print(rows)
-
-    description = cursor.description
-    #print(description)
-    columns = [column[0] for column in cursor.description]
-
-    csv_filename = rf'\\pfduskommi\Promodoro.Export\Warehouse\SKU_Carton_4_QS.csv'
-    with open(csv_filename, mode='w', newline='', encoding= "utf-8-sig") as file:
-        writer = csv.writer(file,delimiter=";")
-        writer.writerow(columns)
-        for row in rows:
-            writer.writerow(row)
-
-    conn.close()
 except Exception as e:
     print(e)
     x = input()
-    
-    
+
+
 
 
