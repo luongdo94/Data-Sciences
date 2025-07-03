@@ -61,8 +61,8 @@ try:
     #print(description)
     columns = [column[0] for column in cursor.description]
 
-    csv_filename = rf'\\PFDUSFS\Userhome$\GiaLuongDo\SKU_Carton_4_QS.csv'
-    with open(csv_filename, mode='w', newline="", encoding= "utf-8-sig") as file:
+    csv_filename = rf'\\pfduskommi\Promodoro.Export\Warehouse\SKU_Carton_4_QS.csv'
+    with open(csv_filename, mode='w', newline='', encoding= "utf-8-sig") as file:
         writer = csv.writer(file,delimiter=";")
         writer.writerow(columns)
         for row in rows:
