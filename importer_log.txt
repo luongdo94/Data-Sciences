@@ -3,3 +3,67 @@
 2025-07-16 14:35:48,199 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_CLASSIFICATION_Merkmale_Basis.csv
 2025-07-16 14:35:48,215 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_ASSIGNMENT_Zuordnung_Basis.csv
 2025-07-16 14:35:48,231 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_KEYWORD_Schlüsselworte_Basis.csv
+2025-07-16 16:04:27,201 - INFO - Connected to the database successfully.
+2025-07-16 16:04:27,843 - ERROR - An error occurred: 'Ursprungsland'
+2025-07-16 16:05:43,164 - INFO - Connected to the database successfully.
+2025-07-16 16:05:43,300 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_Neuanlage_Basis.csv
+2025-07-16 16:17:08,014 - INFO - Connected to the database successfully.
+2025-07-16 16:17:08,525 - ERROR - An error occurred: Execution failed on sql 'SELECT ArtBasis AS aid, Ursprungsland, t.ArtBem as name FROM [t_Art_MegaBase] inner join t_Art_Text_DE t on m.ArtNr = t.ArtNr WHERE Marke IN ('Corporate', 'EXCD', 'XO')': ('42000', '[42000] [Microsoft][ODBC-Treiber für Microsoft Access] Syntaxfehler in JOIN-Operation. (-3510) (SQLExecDirectW)')
+2025-07-16 16:17:46,826 - INFO - Connected to the database successfully.
+2025-07-16 16:17:47,226 - ERROR - An error occurred: Execution failed on sql 'SELECT ArtBasis AS m.aid, m.Ursprungsland, t.ArtBem as name FROM [t_Art_MegaBase] m inner join t_Art_Text_DE t on m.ArtNr = t.ArtNr WHERE Marke IN ('Corporate', 'EXCD', 'XO')': ('42000', '[42000] [Microsoft][ODBC-Treiber für Microsoft Access] Die SELECT-Anweisung schließt ein reserviertes Wort oder einen Argumentnamen ein, das/der falsch, mit falscher Zeichensetzung oder überhaupt nicht eingegeben wurde. (-3504) (SQLExecDirectW)')
+2025-07-16 16:19:27,476 - INFO - Connected to the database successfully.
+2025-07-16 16:19:27,907 - ERROR - An error occurred: 'charmap' codec can't encode character '\u207a' in position 108: character maps to <undefined>
+2025-07-16 16:20:00,012 - INFO - Connected to the database successfully.
+2025-07-16 16:20:00,473 - ERROR - An error occurred: 'charmap' codec can't encode character '\u207a' in position 108: character maps to <undefined>
+2025-07-16 16:20:18,980 - INFO - Connected to the database successfully.
+2025-07-16 16:20:19,392 - ERROR - An error occurred: 'charmap' codec can't encode character '\u207a' in position 108: character maps to <undefined>
+2025-07-16 16:21:08,821 - INFO - Connected to the database successfully.
+2025-07-16 16:21:09,214 - ERROR - An error occurred: 'charmap' codec can't encode character '\u207a' in position 108: character maps to <undefined>
+2025-07-16 16:21:24,804 - INFO - Connected to the database successfully.
+2025-07-16 16:21:24,825 - ERROR - An error occurred: 'charmap' codec can't encode character '\u207a' in position 108: character maps to <undefined>
+2025-07-16 16:21:40,621 - INFO - Connected to the database successfully.
+2025-07-16 16:21:40,664 - ERROR - An error occurred: 'charmap' codec can't encode character '\u207a' in position 108: character maps to <undefined>
+2025-07-16 16:21:47,431 - INFO - Connected to the database successfully.
+2025-07-16 16:21:47,455 - ERROR - An error occurred: 'charmap' codec can't encode character '\u207a' in position 108: character maps to <undefined>
+2025-07-16 16:22:56,456 - INFO - Connected to the database successfully.
+2025-07-16 16:22:56,517 - ERROR - An error occurred: 'charmap' codec can't encode character '\u207a' in position 108: character maps to <undefined>
+2025-07-16 16:24:55,109 - INFO - Connected to the database successfully.
+2025-07-16 16:24:55,137 - ERROR - An error occurred: 'charmap' codec can't encode character '\u207a' in position 108: character maps to <undefined>
+2025-07-16 16:26:48,493 - INFO - Connected to the database successfully.
+2025-07-16 16:26:48,520 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_Neuanlage_Basis.csv
+2025-07-16 16:26:48,571 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_CLASSIFICATION_Merkmale_Basis.csv
+2025-07-16 16:26:48,591 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_ASSIGNMENT_Zuordnung_Basis.csv
+2025-07-16 16:26:48,638 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_KEYWORD_Schlüsselworte_Basis.csv
+2025-07-16 16:27:17,678 - INFO - Connected to the database successfully.
+2025-07-16 16:27:18,173 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_Neuanlage_Basis.csv
+2025-07-16 16:27:18,217 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_CLASSIFICATION_Merkmale_Basis.csv
+2025-07-16 16:27:18,236 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_ASSIGNMENT_Zuordnung_Basis.csv
+2025-07-16 16:27:18,264 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_KEYWORD_Schlüsselworte_Basis.csv
+2025-07-16 16:27:53,390 - INFO - Connected to the database successfully.
+2025-07-16 16:27:53,865 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_Neuanlage_Basis.csv
+2025-07-16 16:27:53,901 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_CLASSIFICATION_Merkmale_Basis.csv
+2025-07-16 16:27:53,913 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_ASSIGNMENT_Zuordnung_Basis.csv
+2025-07-16 16:27:53,926 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_KEYWORD_Schlüsselworte_Basis.csv
+2025-07-16 16:28:22,777 - INFO - Connected to the database successfully.
+2025-07-16 16:28:23,171 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_Neuanlage_Basis.csv
+2025-07-16 16:28:23,205 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_CLASSIFICATION_Merkmale_Basis.csv
+2025-07-16 16:28:23,218 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_ASSIGNMENT_Zuordnung_Basis.csv
+2025-07-16 16:28:23,231 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_KEYWORD_Schlüsselworte_Basis.csv
+2025-07-16 16:30:14,953 - INFO - Connected to the database successfully.
+2025-07-16 16:30:14,966 - ERROR - An error occurred: Execution failed on sql 'SELECT sku.ArtikelCode AS SKU, m.Ursprungsland as country_of_origin, t.ArtBem as name FROM [t_Art_Mega_SKU] sku inner join t_Art_MegaBase m on sku.ArtNr = m.ArtNr inner join t_Art_Text_DE t on m.ArtNr = t.ArtNr WHERE Marke IN ('Corporate', 'EXCD', 'XO')': ('42000', "[42000] [Microsoft][ODBC-Treiber für Microsoft Access] Syntaxfehler (fehlender Operator) in Abfrageausdruck 'sku.ArtNr = m.ArtNr inner join t_Art_Text_DE t on m.ArtNr = t.ArtN'. (-3100) (SQLExecDirectW)")
+2025-07-16 16:31:08,052 - INFO - Connected to the database successfully.
+2025-07-16 16:31:08,062 - ERROR - An error occurred: Execution failed on sql 'SELECT sku.ArtikelCode AS SKU, m.Ursprungsland as country_of_origin, t.ArtBem as name FROM [t_Art_Mega_SKU] sku inner join t_Art_MegaBase m on sku.ArtNr = m.ArtNr inner join t_Art_Text_DE t on m.ArtNr = t.ArtNr WHERE Marke IN ('Corporate', 'EXCD', 'XO')': ('42000', "[42000] [Microsoft][ODBC-Treiber für Microsoft Access] Syntaxfehler (fehlender Operator) in Abfrageausdruck 'sku.ArtNr = m.ArtNr inner join t_Art_Text_DE t on m.ArtNr = t.ArtN'. (-3100) (SQLExecDirectW)")
+2025-07-16 16:31:54,652 - INFO - Connected to the database successfully.
+2025-07-16 16:31:54,662 - ERROR - An error occurred: Execution failed on sql 'SELECT sku.ArtikelCode AS SKU, m.Ursprungsland as country_of_origin, t.ArtBem as name FROM [t_Art_Mega_SKU] sku inner join t_Art_MegaBase m on sku.ArtNr = m.ArtNr inner join t_Art_Text_DE t on m.ArtNr = t.ArtNr WHERE Marke IN ('Corporate', 'EXCD', 'XO')': ('42000', "[42000] [Microsoft][ODBC-Treiber für Microsoft Access] Syntaxfehler (fehlender Operator) in Abfrageausdruck 'sku.ArtNr = m.ArtNr inner join t_Art_Text_DE t on m.ArtNr = t.ArtN'. (-3100) (SQLExecDirectW)")
+2025-07-16 16:35:06,538 - INFO - Connected to the database successfully.
+2025-07-16 16:35:06,548 - ERROR - An error occurred: Execution failed on sql 'SELECT sku.ArtikelCode AS SKU, m.Ursprungsland as country_of_origin, t.ArtBem as name FROM [t_Art_Mega_SKU] sku inner join t_Art_MegaBase m on sku.ArtNr = m.ArtNr inner join t_Art_Text_DE t on m.ArtNr = t.ArtNr WHERE Marke IN ('Corporate', 'EXCD', 'XO')': ('42000', "[42000] [Microsoft][ODBC-Treiber für Microsoft Access] Syntaxfehler (fehlender Operator) in Abfrageausdruck 'sku.ArtNr = m.ArtNr inner join t_Art_Text_DE t on m.ArtNr = t.ArtN'. (-3100) (SQLExecDirectW)")
+2025-07-16 16:36:00,523 - INFO - Connected to the database successfully.
+2025-07-16 16:36:00,536 - ERROR - An error occurred: Execution failed on sql 'SELECT sku.ArtikelCode AS SKU, m.Ursprungsland as country_of_origin, t.ArtBem as name FROM t_Art_Mega_SKU sku inner join t_Art_MegaBase m on sku.ArtNr = m.ArtNr inner join t_Art_Text_DE t on m.ArtNr = t.ArtNr WHERE Marke IN ('Corporate', 'EXCD', 'XO')': ('42000', "[42000] [Microsoft][ODBC-Treiber für Microsoft Access] Syntaxfehler (fehlender Operator) in Abfrageausdruck 'sku.ArtNr = m.ArtNr inner join t_Art_Text_DE t on m.ArtNr = t.ArtN'. (-3100) (SQLExecDirectW)")
+2025-07-16 16:37:49,263 - INFO - Connected to the database successfully.
+2025-07-16 16:37:49,277 - ERROR - An error occurred: Execution failed on sql 'SELECT sku.ArtikelCode AS SKU, m.Ursprungsland as country_of_origin, t.ArtBem as name FROM t_Art_Mega_SKU sku inner join t_Art_MegaBase m on sku.ArtNr = m.ArtNr inner join t_Art_Text_DE t on sku.ArtNr = t.ArtNr WHERE Marke IN ('Corporate', 'EXCD', 'XO')': ('42000', "[42000] [Microsoft][ODBC-Treiber für Microsoft Access] Syntaxfehler (fehlender Operator) in Abfrageausdruck 'sku.ArtNr = m.ArtNr inner join t_Art_Text_DE t on sku.ArtNr = t.ArtN'. (-3100) (SQLExecDirectW)")
+2025-07-16 16:41:16,348 - INFO - Connected to the database successfully.
+2025-07-16 16:41:16,359 - ERROR - An error occurred: Execution failed on sql 'SELECT sku.ArtikelCode AS SKU, m.Ursprungsland as country_of_origin, t.ArtBem as name FROM [t_Art_Mega_SKU] sku inner join [t_Art_MegaBase] m on sku.ArtNr = m.ArtNr inner join [t_Art_Text_DE] t on m.ArtNr = t.ArtNr WHERE Marke IN ('Corporate', 'EXCD', 'XO')': ('42000', "[42000] [Microsoft][ODBC-Treiber für Microsoft Access] Syntaxfehler (fehlender Operator) in Abfrageausdruck 'sku.ArtNr = m.ArtNr inner join [t_Art_Text_DE] t on m.ArtNr = t.ArtN'. (-3100) (SQLExecDirectW)")
+2025-07-16 16:45:01,374 - INFO - Connected to the database successfully.
+2025-07-16 16:45:01,385 - ERROR - An error occurred: Execution failed on sql 'SELECT sku.ArtikelCode as SKU, m.Ursprungsland, t.ArtBem as name FROM t_Art_Mega_SKU sku inner join t_Art_Text_DE t on m.ArtNr = t.ArtNr inner join t_Art_MegaBase m on sku.ArtNR = m.ArtNr WHERE Marke IN ('Corporate', 'EXCD', 'XO')': ('42000', "[42000] [Microsoft][ODBC-Treiber für Microsoft Access] Syntaxfehler (fehlender Operator) in Abfrageausdruck 'm.ArtNr = t.ArtNr inner join t_Art_MegaBase m on sku.ArtNR = m.ArtN'. (-3100) (SQLExecDirectW)")
+2025-07-16 16:48:11,037 - INFO - Connected to the database successfully.
+2025-07-16 16:48:11,047 - ERROR - An error occurred: Execution failed on sql 'SELECT sku.ArtikelCode as SKU, m.Ursprungsland, t.ArtBem as name FROM t_Art_Mega_SKU sku inner join t_Art_Text_DE t on sku.ArtNr = t.ArtNr inner join t_Art_MegaBase m on sku.ArtNR = m.ArtNr WHERE Marke IN ('Corporate', 'EXCD', 'XO')': ('42000', "[42000] [Microsoft][ODBC-Treiber für Microsoft Access] Syntaxfehler (fehlender Operator) in Abfrageausdruck 'sku.ArtNr = t.ArtNr inner join t_Art_MegaBase m on sku.ArtNR = m.ArtN'. (-3100) (SQLExecDirectW)")
