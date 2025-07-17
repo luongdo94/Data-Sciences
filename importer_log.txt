@@ -1,0 +1,5 @@
+2025-07-16 14:35:48,134 - INFO - Connected to the database successfully.
+2025-07-16 14:35:48,158 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_Neuanlage_Basis.csv
+2025-07-16 14:35:48,199 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_CLASSIFICATION_Merkmale_Basis.csv
+2025-07-16 14:35:48,215 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_ASSIGNMENT_Zuordnung_Basis.csv
+2025-07-16 14:35:48,231 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_KEYWORD_Schlüsselworte_Basis.csv

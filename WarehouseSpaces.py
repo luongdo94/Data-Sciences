@@ -52,7 +52,7 @@ try:
     with engine.connect() as conn:
         df = pd.read_sql_query(sql_query, conn)
         csv_filename = r'\\pfduskommi\Promodoro.Export\Warehouse\SKU_Carton_4_QS.csv'
-        df.to_csv(csv_filename, sep=';', index=False, encoding='utf-8-sig')
+        df.to_csv(csv_filename, sep=';', index=False, encoding='windows-1252')
 
 except Exception as e:
     print(e)
