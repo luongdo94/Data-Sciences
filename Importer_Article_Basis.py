@@ -2,6 +2,7 @@ import logging
 import pyodbc
 import pandas as pd
 from datetime import datetime
+# Removed invalid import statement 
 
 mdb_file = r"C:\Users\gia.luongdo\Desktop\ERP-Importer\db_Artikel_Export2.mdb"
 artikel_basis_csv = r"C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_Neuanlage_Basis.csv"
@@ -169,18 +170,4 @@ def read_and_write_Schlüsselworte_Basis():
     print(f'Data exported to {Schlüsselworte_csv}')
     logging.info(f'Data exported to {Schlüsselworte_csv}')
 
-
-# Call the function to execute the logic
-try:
-    read_and_write_article_data()
-    read_and_write_classification_data()
-    read_and_write_Zuordnung_Basis()
-    read_and_write_Schlüsselworte_Basis()
-except Exception as e:
-    print(f"An error occurred: {e}")
-    logging.error(f"An error occurred: {e}")
-
-
-
-
-conn.close()
+# Connection will be closed by main.py
