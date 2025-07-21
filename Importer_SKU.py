@@ -3,6 +3,10 @@ import logging
 import pyodbc
 import pandas as pd
 from datetime import datetime
+import warnings
+
+# Suppress pandas SQLAlchemy warning
+warnings.filterwarnings('ignore', message='pandas only supports SQLAlchemy connectable')
 
 mdb_file = r"C:\Users\gia.luongdo\Desktop\ERP-Importer\db_Artikel_Export2.mdb"
 sku_basis_csv = r"C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_Neuanlage_Basis.csv"
@@ -23,8 +27,22 @@ logging.info("Connected to the database successfully.")
 #Reads data from the database
 def read_and_write_aku_data():
     table_name = 't_Art_Mega_SKU'
-    query = f"SELECT sku.ArtikelCode AS SKU, m.Ursprungsland, t.ArtBem AS name FROM (t_Art_Mega_SKU sku INNER JOIN t_Art_Text_DE t ON sku.ArtNr = t.ArtNr) INNER JOIN t_Art_MegaBase m ON sku.ArtNR = m.ArtNr WHERE m.Marke IN ('Corporate', 'EXCD', 'XO');"
+    query = """
+        SELECT 
+            sku.ArtikelCode AS SKU,
+            m.ArtBasis AS aid,
+            m.ArtNr AS ArtNr,
+            m.Ursprungsland,
+            t.ArtBem AS name
+        FROM 
+            ((t_Art_Mega_SKU sku
+            INNER JOIN t_Art_Text_DE t ON sku.ArtNr = t.ArtNr)
+            INNER JOIN t_Art_MegaBase m ON sku.ArtNr = m.ArtNr)
+        WHERE 
+            m.Marke IN ('Corporate', 'EXCD', 'XO')
+    """
     df = pd.read_sql(query, conn)
+    
 
     # Add columns with specified values
     df['company'] = 0
@@ -50,14 +68,26 @@ def read_and_write_aku_data():
     df['taxSl'] = 'Waren'
     df['valid_from'] = datetime.now().strftime("%Y%m%d")
 
-    # Take only first 2 characters from Ursprungsland and rename to 'country', reorder columns
+    # Take only first 2 characters from Ursprungsland and rename to 'country'
     df['country_of_origin'] = df['Ursprungsland'].str[:2]
-    df = df[['SKU', 'company', 'country_of_origin', 'automatic_batch_numbering_pattern', 'batch_management', 'batch_number_range', 'batch_numbering_type', 'date_requirement', 'discountable', 'factory', 'isPi', 'isShopArticle', 'isSl', 'isSt', 'isVerifiedArticle', 'isCatalogArticle', 'unitPi', 'unitSl', 'unitSt', 'name', 'replacement_time', 'taxPi', 'taxSl', 'valid_from']]
-
-    # Write DataFrame to CSV with correct separator and columns
+    
+    # Save the link data before reordering columns
+    df_link = df[['SKU', 'aid', 'ArtNr']].copy()
+    
+    # Reorder columns for the main export
+    df = df[['SKU', 'company', 'country_of_origin', 'automatic_batch_numbering_pattern', 
+             'batch_management', 'batch_number_range', 'batch_numbering_type', 
+             'date_requirement', 'discountable', 'factory', 'isPi', 'isShopArticle', 
+             'isSl', 'isSt', 'isVerifiedArticle', 'isCatalogArticle', 'unitPi', 
+             'unitSl', 'unitSt', 'name', 'replacement_time', 'taxPi', 'taxSl', 'valid_from']]
+    
+    # Write DataFrames to CSV files
     df.to_csv(sku_basis_csv, index=False, encoding='utf-8', sep=',')
-    print(f'Data exported to {sku_basis_csv}')
-    logging.info(f'Data exported to {sku_basis_csv}')
+    df_link.to_csv(r"C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_ArtBasis.csv", 
+                  index=False, encoding='windows-1252', sep=',')
+    
+    print(f'Data exported to {sku_basis_csv} and IMPORTER_SKU_ArtBasis.csv')
+    logging.info(f'Data exported to {sku_basis_csv} and IMPORTER_SKU_ArtBasis.csv')
 
 # IMPORTER_SKU_CLASSIFICATION_Merkmale_Basis
 def read_and_write_sku_classification_data():
@@ -74,13 +104,20 @@ def read_and_write_sku_classification_data():
             sku.Hauptfarbe AS Farbgruppe,
             sku.FarbeNeu AS Farbe,
             sku.isColorCombination AS zweifarbig,
-            m.Materialart AS Fabric_Herstellung,
+            sku.Karton_Länge as Verpackungslänge,
+            sku.Karton_Breite as Verpackungsbreite,
+            sku.Karton_Höhe as Verpackungshoehe,
+            sku.Produktgewicht as Produktgewicht,
+            sku.WarenNr as WarenNr,
+            sku.isColorMelange as ColorMelange,
+            sku.VZTA_gültig_bis as [VZTA aktiv bis],
+            sku.VZTA_gültig_von as [VZTA aktiv von],
             sku.ArtSort AS sku_ArtSort,
+            m.Materialart AS Fabric_Herstellung,
             m.Produktgruppe AS product_group,
             m.Marke AS Marke,
             m.Grammatur AS Grammatur,
             m.Artikel_Partner AS Artikel_Partner,
-            m.ArtSort AS ArtSort,
             m.Zusammensetzung AS Zusammensetzung,
             m.Gender AS Gender,
             f.flag_workwear AS workwear,
@@ -99,16 +136,10 @@ def read_and_write_sku_classification_data():
             f.flag_outdoor AS outdoor,
             f.flag_plussize AS oversize,
             f.isNoLabel AS label,
-            f.isErw AS erw,
-            sku.Karton_Länge as Verpackungslänge,
-            sku.Karton_Breite as Verpackungsbreite,
-            sku.Karton_Höhe as Verpackungshoehe,
-            sku.EAN as EAN,
-            sku.Produktgewicht as Produktgewicht,
-            sku.WarenNr as WarenNr
+            f.isErw AS erw
         FROM (t_Art_MegaBase m
         INNER JOIN t_Art_Flags f ON m.ArtNr = f.ArtNr )
-        inner join t_Art_Mega_SKU sku on m.ArtNr = sku.ArtNr
+        INNER JOIN t_Art_Mega_SKU sku ON m.ArtNr = sku.ArtNr
         WHERE m.Marke IN ('Corporate', 'EXCD', 'XO')
     """
     classification_df = pd.read_sql(classification_query, conn)
@@ -125,7 +156,7 @@ def read_and_write_sku_classification_data():
     classification_df['feature[2]'] = 'Partnerlook'
     classification_df['feature_value[2]'] = classification_df['Artikel_Partner'].str[:4]
     classification_df['feature[3]'] = 'Sortierung'
-    classification_df['feature_value[3]'] = classification_df['ArtSort']
+    classification_df['feature_value[3]'] = classification_df['sku_ArtSort']
     classification_df['feature[4]'] = 'Fabric_Herstellung'
     classification_df['feature_value[4]'] = classification_df['Fabric_Herstellung']
     classification_df['feature[5]'] = 'Material'
@@ -184,15 +215,19 @@ def read_and_write_sku_classification_data():
     classification_df['feature_value[31]'] = classification_df['Verpackungsbreite']
     classification_df['feature[32]'] = 'Verpackungshoehe'
     classification_df['feature_value[32]'] = classification_df['Verpackungshoehe']
-    classification_df['feature[33]'] = 'EAN'
-    classification_df['feature_value[33]'] = classification_df['EAN']
-    classification_df['feature[34]'] = 'Produktgewicht'
-    classification_df['feature_value[34]'] = classification_df['Produktgewicht']
-    classification_df['feature[35]'] = 'Statistische Warnennummer'
-    classification_df['feature_value[35]'] = classification_df['WarenNr']
+    classification_df['feature[33]'] = 'Produktgewicht'
+    classification_df['feature_value[33]'] = classification_df['Produktgewicht']
+    classification_df['feature[34]'] = 'Statistische Warnennummer'
+    classification_df['feature_value[34]'] = classification_df['WarenNr']
+    classification_df['feature[35]'] = 'ColorMelange'
+    classification_df['feature_value[35]'] = classification_df['ColorMelange']
+    classification_df['feature[36]'] = 'VZTA_gueltig_bis'
+    classification_df['feature_value[36]'] = classification_df['VZTA aktiv bis']
+    classification_df['feature[37]'] = 'VZTA_gueltig_von'
+    classification_df['feature_value[37]'] = classification_df['VZTA aktiv von']
     # Reorder columns
     feature_cols = []
-    for i in range(36):
+    for i in range(38):
         feature_cols.extend([f'feature[{i}]', f'feature_value[{i}]'])
     classification_df = classification_df[
         ['SKU', 'company', 'classification_system', 'product_group', 'product_group_superior'] + feature_cols
@@ -229,34 +264,12 @@ def read_and_write_SKU_Keyword():
     df.to_csv(Zuordnung_csv, index=False, encoding='windows-1252', sep=',')
     print(f'Data exported to {Zuordnung_csv}')
     logging.info(f'Data exported to {Zuordnung_csv}')
-
-#Import_SKU_EAN
-def read_and_write_SKU_EAN():
-    table_name = 't_Art_MegaBase'
-    query = """
-        SELECT 
-            sku.ArtikelCode AS SKU,
-            0 as company,
-            sku.EAN as ean,
-            'de' as language,
-            ',' as seperator
-        FROM (t_Art_MegaBase m
-        INNER JOIN t_Art_Mega_SKU sku ON m.ArtNr = sku.ArtNr)
-        INNER JOIN t_Art_Text_DE t ON sku.ArtNr = t.ArtNr
-        WHERE m.Marke IN ('Corporate', 'EXCD', 'XO')
-    """
-    df = pd.read_sql(query, conn)
-    Zuordnung_csv = r"C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_EAN.csv"
-    df.to_csv(Zuordnung_csv, index=False, encoding='windows-1252', sep=',')
-    print(f'Data exported to {Zuordnung_csv}')
-    logging.info(f'Data exported to {Zuordnung_csv}')
-
 #Link SKU and Article Basis
-def link_sku_article_basis():
-    query = f"SELECT sku.ArtikelCode AS SKU, m.ArtBasis as aid, m.ArtNr as ArtNr FROM t_Art_Mega_SKU sku INNER JOIN t_Art_MegaBase m ON sku.ArtNR = m.ArtNr WHERE m.Marke IN ('Corporate', 'EXCD', 'XO');"
-    df = pd.read_sql(query, conn)
+#def link_sku_article_basis():
+    #query = f"SELECT sku.ArtikelCode AS SKU, m.ArtBasis as aid, m.ArtNr as ArtNr FROM t_Art_Mega_SKU sku INNER JOIN t_Art_MegaBase m ON sku.ArtNR = m.ArtNr WHERE m.Marke IN ('Corporate', 'EXCD', 'XO');"
+    #df = pd.read_sql(query, conn)
 
-    df.to_csv(r"C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_ArtBasis.csv", index=False, encoding='windows-1252', sep=',')
+    #df.to_csv(r"C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_ArtBasis.csv", index=False, encoding='windows-1252', sep=',')
 
 # Connection will be closed by main.py
 
