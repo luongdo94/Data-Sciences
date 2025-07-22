@@ -533,3 +533,11 @@
 2025-07-21 16:00:36,442 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_KEYWORD_Schlüsselworte_Basis.csv
 2025-07-21 16:00:36,552 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_Neuanlage_Basis.csv and IMPORTER_SKU_ArtBasis.csv
 2025-07-21 16:00:36,623 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_Keyword.csv
+2025-07-22 10:06:27,449 - INFO - Connected to the database successfully.
+2025-07-22 10:06:27,488 - INFO - Connected to the database successfully.
+2025-07-22 10:06:27,585 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_Neuanlage_Basis.csv
+2025-07-22 10:06:28,327 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_CLASSIFICATION_Classification_Basis.csv
+2025-07-22 10:06:28,350 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_ASSIGNMENT_Zuordnung_Basis.csv
+2025-07-22 10:06:28,364 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_KEYWORD_Schlüsselworte_Basis.csv
+2025-07-22 10:06:28,486 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_Neuanlage_Basis.csv and IMPORTER_SKU_ArtBasis.csv
+2025-07-22 10:06:28,568 - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_Keyword.csv
