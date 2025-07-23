@@ -55,7 +55,7 @@ def read_and_write_article_data():
     df = df[['aid', 'company', 'country_of_origin', 'automatic_batch_numbering_pattern', 'batch_management', 'batch_number_range', 'batch_numbering_type', 'date_requirement', 'discountable', 'factory', 'isPi', 'isShopArticle', 'isSl', 'isSt', 'isVerifiedArticle', 'isCatalogArticle', 'unitPi', 'unitSl', 'unitSt', 'name', 'replacement_time', 'taxPi', 'taxSl', 'valid_from']]
 
     # Write DataFrame to CSV with correct separator and columns
-    df.to_csv(artikel_basis_csv, index=False, encoding='utf-8', sep=',')
+    df.to_csv(artikel_basis_csv, index=False, encoding='utf-8-sig', sep=';', errors='ignore')
     print(f'Data exported to {artikel_basis_csv}')
     logging.info(f'Data exported to {artikel_basis_csv}')
 
@@ -132,7 +132,7 @@ def read_and_write_classification_data():
     
         # Write DataFrame to CSV (add your desired path)
     classification_csv = r"C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_CLASSIFICATION_Merkmale_Basis.csv"
-    classification_df.to_csv(classification_csv, index=False, encoding='windows-1252', sep=',')
+    classification_df.to_csv(classification_csv, index=False, encoding='windows-1252', sep=';')
     print(f'Data exported to {classification_csv}')
     logging.info(f'Data exported to {classification_csv}')
 
@@ -142,7 +142,7 @@ def read_and_write_Zuordnung_Basis():
     query = f"SELECT ArtBasis AS aid, Artikel_Partner as aid_assigned, Artikel_Alternativen as aid_alternativen FROM [{table_name}] WHERE Marke IN ('Corporate', 'EXCD', 'XO')"
     df = pd.read_sql(query, conn)
     df['aid_assigned'] = df['aid_assigned']+ df['aid_alternativen']
-    df_short= df[['aid', 'aid_assigned']]
+    df_short = df[['aid', 'aid_assigned']].copy()
     df_short['aid_assigned'] = df_short['aid_assigned'].str.split(';')
     df_short['aid_assigned'] = df_short['aid_assigned'].str[:-1]
     df_final = df_short.explode('aid_assigned')
@@ -151,7 +151,7 @@ def read_and_write_Zuordnung_Basis():
     df_final['remove_assocs'] = 0
     df_final['type'] = 3
     Zuordnung_csv = r"C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_ASSIGNMENT_Zuordnung_Basis.csv"
-    df_final.to_csv(Zuordnung_csv, index=False, encoding='windows-1252', sep=',')
+    df_final.to_csv(Zuordnung_csv, index=False, encoding='windows-1252', sep=';')
     print(f'Data exported to {Zuordnung_csv}')
     logging.info(f'Data exported to {Zuordnung_csv}')
 
@@ -166,7 +166,7 @@ def read_and_write_Schlüsselworte_Basis():
     df['separator'] = ','
     df = df[['aid', 'company', 'keyword', 'language', 'separator']]
     Schlüsselworte_csv = r"C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_KEYWORD_Schlüsselworte_Basis.csv"
-    df.to_csv(Schlüsselworte_csv, index=False, encoding='utf-8', sep=',')
+    df.to_csv(Schlüsselworte_csv, index=False, encoding='utf-8-sig', sep=';', errors='ignore')
     print(f'Data exported to {Schlüsselworte_csv}')
     logging.info(f'Data exported to {Schlüsselworte_csv}')
 

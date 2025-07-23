@@ -5,7 +5,7 @@ import Importer_SKU
 from Importer_Article_Basis import (
     read_and_write_article_data,
     read_and_write_Zuordnung_Basis,
-    read_and_write_Schlüsselworte_Basis,
+    read_and_write_Schlüsselworte_Basis, 
     read_and_write_classification_data
 )
 from Importer_SKU import (
@@ -22,6 +22,7 @@ try:
     read_and_write_Schlüsselworte_Basis()
     read_and_write_aku_data()
     read_and_write_SKU_Keyword()
+    read_and_write_classification_data()
     print("All operations completed successfully!")
 
 except Exception as e:
@@ -29,16 +30,15 @@ except Exception as e:
 
 finally:
     # Close database connections from both modules
-    try:
-        if hasattr(Importer_SKU, 'conn') and Importer_SKU.conn:
-            Importer_SKU.conn.close()
-            print("Importer_SKU database connection closed.")
-    except Exception as e:
-        print(f"Error closing Importer_SKU connection: {e}")
+    modules_to_close = [
+        (Importer_SKU, "Importer_SKU"),
+        (Importer_Article_Basis, "Importer_Article_Basis")
+    ]
     
-    try:
-        if hasattr(Importer_Article_Basis, 'conn') and Importer_Article_Basis.conn:
-            Importer_Article_Basis.conn.close()
-            print("Importer_Article_Basis database connection closed.")
-    except Exception as e:
-        print(f"Error closing Importer_Article_Basis connection: {e}")
+    for module, module_name in modules_to_close:
+        try:
+            if hasattr(module, 'conn') and module.conn:
+                module.conn.close()
+                print(f"{module_name} database connection closed.")
+        except Exception as e:
+            print(f"Error closing {module_name} connection: {e}")
