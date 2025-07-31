@@ -1,0 +1,21 @@
+2025-07-31 10:31:03,854 - root - INFO - Connected to the database successfully.
+2025-07-31 10:31:03,909 - root - INFO - Connected to the database successfully.
+2025-07-31 10:31:03,963 - root - INFO - Connected to the database successfully for not_in_erp operations.
+2025-07-31 10:31:03,964 - __main__ - INFO - Starting data export...
+2025-07-31 10:31:03,964 - __main__ - INFO - Exporting main data...
+2025-07-31 10:31:04,073 - root - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_Neuanlage_Basis.csv
+2025-07-31 10:31:05,222 - root - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_CLASSIFICATION_Classification_Basis.csv
+2025-07-31 10:31:05,250 - root - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_ASSIGNMENT_Zuordnung_Basis.csv
+2025-07-31 10:31:05,276 - root - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_KEYWORD_Schlüsselworte_Basis.csv
+2025-07-31 10:31:05,415 - root - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_Neuanlage_Basis.csv
+2025-07-31 10:31:05,500 - root - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_Keyword.csv
+2025-07-31 10:31:05,545 - root - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_CLASSIFICATION_Merkmale_Basis.csv
+2025-07-31 10:31:05,549 - __main__ - INFO - Exporting NOT IN ERP data...
+2025-07-31 10:31:05,568 - root - INFO - Data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_BASIS_notinERP.csv
+2025-07-31 10:31:05,568 - root - INFO - Processed 0 records filtered by CSV file
+2025-07-31 10:31:05,602 - root - INFO - Classification data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_CLASSIFICATION_Classification_Basis_notinERP.csv
+2025-07-31 10:31:05,603 - root - INFO - Processed 0 classification records filtered by CSV file
+2025-07-31 10:31:05,614 - root - INFO - Keyword data exported to C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_Keyword_notinERP.csv
+2025-07-31 10:31:05,615 - root - INFO - Processed 0 keyword records filtered by CSV file
+2025-07-31 10:31:05,615 - __main__ - INFO - All data has been exported successfully!
+2025-07-31 10:31:05,615 - __main__ - INFO - Closing database connections...

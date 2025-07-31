@@ -66,7 +66,23 @@ def read_and_write_classification_data():
     table_name = 't_Art_Flags'
     classification_query = f"SELECT m.ArtBasis AS aid, m.Produktgruppe as product_group, m.Marke as Marke, m.Grammatur as Grammatur, m.Artikel_Partner as Artikel_Partner , m.ArtSort as ArtSort, m.Materialart as Materialart, m.Zusammensetzung as Zusammensetzung, m.Gender as Gender, f.flag_workwear as workwear, f.flag_veredelung as veredelung, f.flag_discharge as discharge, f.flag_dtg as dtg, f.flag_dyoj as dyoj, f.flag_dyop as dyop, f.flag_flock as flock, f.flag_siebdruck as siebdruck, f.flag_stick as stick, f.flag_sublimation as sublimation, f.flag_transfer as transfer, f.flag_premium as premium, f.flag_extras as extras, f.flag_outdoor as outdoor, f.flag_plussize as oversize, f.isNoLabel as label, f.isErw as erw FROM [{classification_table_name}] m inner join [{table_name}] f on m.ArtNr = f.ArtNr WHERE m.Marke IN ('Corporate', 'EXCD', 'XO')"
     classification_df = pd.read_sql(classification_query, conn)
-
+    
+    # Clean Grammatur column - extract only the first consecutive numbers
+    def extract_numbers(text):
+        if pd.isna(text) or text is None:
+            return ''
+        # Convert to string and find first consecutive digits
+        import re
+        text_str = str(text)
+        match = re.search(r'\d+', text_str)
+        return match.group() if match else ''
+    
+    # Apply the function to clean Grammatur
+    classification_df['Grammatur'] = classification_df['Grammatur'].apply(extract_numbers)
+    
+    # Transform Gender column - change 'Kinder' to empty string
+    classification_df['Gender'] = classification_df['Gender'].replace('Kinder', '')
+    
     # Add columns with specified values
     classification_df['company'] = 0
     classification_df['classification_system'] = 'Warengruppensystem'
@@ -119,6 +135,7 @@ def read_and_write_classification_data():
     classification_df['feature_value[22]'] = classification_df['Gender']
     classification_df['feature[23]'] = 'Brand_Label'
     classification_df['feature_value[23]'] = abs(classification_df['label'])
+
     
     # Reorder columns as requested
     classification_df = classification_df[['aid', 'company', 'classification_system', 'product_group', 'product_group_superior',
@@ -130,7 +147,7 @@ def read_and_write_classification_data():
         'feature[20]', 'feature_value[20]', 'feature[21]', 'feature_value[21]', 'feature[22]', 'feature_value[22]', 'feature[23]', 'feature_value[23]']]
     
     
-        # Write DataFrame to CSV (add your desired path)
+    # Write DataFrame to CSV (add your desired path)
     classification_csv = r"C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_ARTICLE_CLASSIFICATION_Merkmale_Basis.csv"
     classification_df.to_csv(classification_csv, index=False, encoding='windows-1252', sep=';')
     print(f'Data exported to {classification_csv}')
@@ -160,6 +177,9 @@ def read_and_write_Schlüsselworte_Basis():
     table_name = 't_Art_MegaBase'
     query = f"SELECT ArtBasis AS aid, Artikel_Partner as aid_assigned, t.SuchText as keyword FROM [{table_name}] m inner join t_Art_Text_DE t on m.ArtNr = t.ArtNr WHERE Marke IN ('Corporate', 'EXCD', 'XO')"
     df = pd.read_sql(query, conn)
+    # Thay thế các giá trị trống trong cột keyword bằng 'kein Schlüsselwort'
+    df['keyword'] = df['keyword'].fillna('kein Schlüsselwort')
+    df['keyword'] = df['keyword'].replace('', 'kein Schlüsselwort')
     # Add columns with specified values
     df['company'] = 0
     df['language'] = 'DE'
@@ -169,5 +189,7 @@ def read_and_write_Schlüsselworte_Basis():
     df.to_csv(Schlüsselworte_csv, index=False, encoding='utf-8-sig', sep=';', errors='ignore')
     print(f'Data exported to {Schlüsselworte_csv}')
     logging.info(f'Data exported to {Schlüsselworte_csv}')
+
+
 
 # Connection will be closed by main.py

@@ -70,10 +70,7 @@ def read_and_write_aku_data():
 
     # Take only first 2 characters from Ursprungsland and rename to 'country'
     df['country_of_origin'] = df['Ursprungsland'].str[:2]
-    
-    # Save the link data before reordering columns
-    df_link = df[['SKU', 'aid', 'ArtNr']].copy()
-    
+
     # Reorder columns for the main export
     df = df[['SKU', 'company', 'country_of_origin', 'automatic_batch_numbering_pattern', 
              'batch_management', 'batch_number_range', 'batch_numbering_type', 
@@ -83,11 +80,10 @@ def read_and_write_aku_data():
     
     # Write DataFrames to CSV files
     df.to_csv(sku_basis_csv, index=False, encoding='utf-8', sep=',')
-    df_link.to_csv(r"C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_ArtBasis.csv", 
-                  index=False, encoding='windows-1252', sep=',')
+
     
-    print(f'Data exported to {sku_basis_csv} and IMPORTER_SKU_ArtBasis.csv')
-    logging.info(f'Data exported to {sku_basis_csv} and IMPORTER_SKU_ArtBasis.csv')
+    print(f'Data exported to {sku_basis_csv}')
+    logging.info(f'Data exported to {sku_basis_csv}')
 
 # IMPORTER_SKU_CLASSIFICATION_Merkmale_Basis
 def read_and_write_sku_classification_data():
@@ -193,9 +189,18 @@ def read_and_write_sku_classification_data():
     classification_df['feature_value[20]'] = abs(classification_df['outdoor'])
     classification_df['feature[21]'] = 'Size_Oversize'
     classification_df['feature_value[21]'] = abs(classification_df['oversize'])
-    classification_df['feature[22]'] = 'Gender'
+    classification_df['feature[22]'] = 'Geschlecht'
     classification_df['feature_value[22]'] = classification_df['Gender']
     classification_df['feature[23]'] = 'Brand_Label'
+    # Transform Gender column: change 'Kinder' to empty string
+    classification_df['Gender'] = classification_df['Gender'].replace('Kinder', '')
+    
+    # Process Grammatur to extract only numeric part
+    classification_df['Grammatur'] = classification_df['Grammatur'].str.extract(r'(\d+)')
+    
+    # Process Produktgewicht to remove decimal points
+    classification_df['Produktgewicht'] = classification_df['Produktgewicht'].astype(str).str.replace('\.0$', '', regex=True)
+    
     classification_df['feature_value[23]'] = abs(classification_df['label'])
     classification_df['feature[24]'] = 'Colour_Farbe'
     classification_df['feature_value[24]'] = classification_df['Farbe']
@@ -209,25 +214,17 @@ def read_and_write_sku_classification_data():
     classification_df['feature_value[28]'] = classification_df['zweifarbig']
     classification_df['feature[29]'] = 'Ursprungsland'
     classification_df['feature_value[29]'] = classification_df['Ursprungsland'].str[:2]
-    classification_df['feature[30]'] = 'Verpackung_Länge'
-    classification_df['feature_value[30]'] = classification_df['Verpackungslänge']
-    classification_df['feature[31]'] = 'Verpackung_Breite'
-    classification_df['feature_value[31]'] = classification_df['Verpackungsbreite']
-    classification_df['feature[32]'] = 'Verpackung_Hoehe'
-    classification_df['feature_value[32]'] = classification_df['Verpackungshoehe']
-    classification_df['feature[33]'] = 'Fabric_Gewicht'
-    classification_df['feature_value[33]'] = classification_df['Produktgewicht']
-    classification_df['feature[34]'] = 'Zolltext_Stat.Warennummer'
-    classification_df['feature_value[34]'] = classification_df['WarenNr']
-    classification_df['feature[35]'] = 'Fabric_Melange'
-    classification_df['feature_value[35]'] = classification_df['ColorMelange']
-    classification_df['feature[36]'] = 'Zolltext_VZTA_aktiv_bis'
-    classification_df['feature_value[36]'] = classification_df['VZTA aktiv bis']
-    classification_df['feature[37]'] = 'Zolltext_VZTA_aktiv_von'
-    classification_df['feature_value[37]'] = classification_df['VZTA aktiv von']
+    classification_df['feature[30]'] = 'Fabric_Melange'
+    classification_df['feature_value[30]'] = classification_df['ColorMelange']
+    classification_df['feature[31]'] = 'Zolltext_VZTA_aktiv_bis'
+    # Convert date format from yyyy-mm-dd to yyyyMMdd
+    classification_df['feature_value[31]'] = pd.to_datetime(classification_df['VZTA aktiv bis']).dt.strftime('%Y%m%d')
+    classification_df['feature[32]'] = 'Zolltext_VZTA_aktiv_von'
+    # Convert date format from yyyy-mm-dd to yyyyMMdd
+    classification_df['feature_value[32]'] = pd.to_datetime(classification_df['VZTA aktiv von']).dt.strftime('%Y%m%d')
     # Reorder columns
     feature_cols = []
-    for i in range(38):
+    for i in range(33):
         feature_cols.extend([f'feature[{i}]', f'feature_value[{i}]'])
     classification_df = classification_df[
         ['SKU', 'company', 'classification_system', 'product_group', 'product_group_superior'] + feature_cols
@@ -249,7 +246,7 @@ def read_and_write_SKU_Keyword():
     table_name = 't_Art_MegaBase'
     query = """
         SELECT 
-            sku.ArtikelCode AS SKU,
+            sku.ArtikelCode AS aid,
             0 as company,
             t.SuchText as keyword_list,
             'de' as language,
@@ -264,14 +261,6 @@ def read_and_write_SKU_Keyword():
     df.to_csv(Zuordnung_csv, index=False, encoding='windows-1252', sep=',')
     print(f'Data exported to {Zuordnung_csv}')
     logging.info(f'Data exported to {Zuordnung_csv}')
-#Link SKU and Article Basis
-#def link_sku_article_basis():
-    #query = f"SELECT sku.ArtikelCode AS SKU, m.ArtBasis as aid, m.ArtNr as ArtNr FROM t_Art_Mega_SKU sku INNER JOIN t_Art_MegaBase m ON sku.ArtNR = m.ArtNr WHERE m.Marke IN ('Corporate', 'EXCD', 'XO');"
-    #df = pd.read_sql(query, conn)
-
-    #df.to_csv(r"C:\Users\gia.luongdo\Desktop\ERP-Importer\IMPORTER_SKU_ArtBasis.csv", index=False, encoding='windows-1252', sep=',')
-
-# Connection will be closed by main.py
 
 # %%
 
