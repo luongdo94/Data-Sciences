@@ -1,0 +1,40 @@
+# Ignore datem.mdb file
+C:\Users\gia.luongdo\Python\importer_artikel_project\data\DATEN.MDB
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+env/
+
+# IDE specific files
+.vscode/
+.idea/
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Local development settings
+.env
+.env.local
+
+# Logs
+*.log

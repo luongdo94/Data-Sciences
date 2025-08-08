@@ -1,0 +1,9 @@
+﻿aid;company;country_of_origin;automatic_batch_numbering_pattern;batch_management;batch_number_range;batch_numbering_type;date_requirement;discountable;factory;isPi;isShopArticle;isSl;isSt;isVerifiedArticle;isCatalogArticle;unitPi;unitSl;unitSt;name;replacement_time;taxPi;taxSl;valid_from
+3011;0;EG;{No,000000000};2;Chargen;3;1;ja;Düsseldorf;ja;ja;ja;ja;ja;ja;Stk;Stk;Stk;Men’s Fashion Organic-T;1;Waren;Waren;20250807
+3100;0;EG;{No,000000000};2;Chargen;3;1;ja;Düsseldorf;ja;ja;ja;ja;ja;ja;Stk;Stk;Stk;Unisex Premium-T Neo;1;Waren;Waren;20250807
+3590;0;BD;{No,000000000};2;Chargen;3;1;ja;Düsseldorf;ja;ja;ja;ja;ja;ja;Stk;Stk;Stk;EXCD Unisex Contrast-T;1;Waren;Waren;20250807
+4590;0;BD;{No,000000000};2;Chargen;3;1;ja;Düsseldorf;ja;ja;ja;ja;ja;ja;Stk;Stk;Stk;EXCD Unisex Contrast Polo;1;Waren;Waren;20250807
+4920;0;;{No,000000000};2;Chargen;3;1;ja;Düsseldorf;ja;ja;ja;ja;ja;ja;Stk;Stk;Stk;Unisex Polo Contrast Stripes;1;Waren;Waren;20250807
+5500;0;CN;{No,000000000};2;Chargen;3;1;ja;Düsseldorf;ja;ja;ja;ja;ja;ja;Stk;Stk;Stk;Unisex Heavy Hoody Jacket;1;Waren;Waren;20250807
+7631;0;CN;{No,000000000};2;Chargen;3;1;ja;Düsseldorf;ja;ja;ja;ja;ja;ja;Stk;Stk;Stk;Men’s Padded Jacket;1;Waren;Waren;20250807
+7632;0;CN;{No,000000000};2;Chargen;3;1;ja;Düsseldorf;ja;ja;ja;ja;ja;ja;Stk;Stk;Stk;Women’s Padded Jacket;1;Waren;Waren;20250807
