@@ -27,11 +27,11 @@ def compare_columns(
             dtype={col1: str, col2: str}
         )
             
-        # Process data
-        col1_values = df[col1].dropna().astype(str).str.strip()
-        col2_values = df[col2].dropna().astype(str).str.strip()
+        # Process data and convert to lowercase
+        col1_values = df[col1].dropna().astype(str).str.strip().str.lower()
+        col2_values = df[col2].dropna().astype(str).str.strip().str.lower()
         
-        # Find differences
+        # Find differences (case insensitive comparison)
         diff = set(col1_values) - set(col2_values)
         
         # Create output directory if not exists

@@ -58,7 +58,8 @@ def process_colors(csv_file_path=None, sku_column='aid'):
             if row['temp_color'] != row['new_color']:
                 color_part = row['new_color']
                 
-            parts[1] = color_part
+            # Remove all hyphens from the color part
+            parts[1] = color_part.replace('-', '')
             return '-'.join(parts)
             
         # Update SKU column

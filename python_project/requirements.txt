@@ -1,3 +1,0 @@
-# Add your project dependencies here, e.g.:
-# pandas
-# numpy

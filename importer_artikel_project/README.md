@@ -1,54 +1,54 @@
-# Importer Artikel
+# Article Importer
 
-Công cụ để import dữ liệu bài viết từ cơ sở dữ liệu Access sang các file CSV.
+A tool for importing article data from Microsoft Access database to CSV files.
 
-## Yêu cầu
+## Requirements
 
 - Python 3.7+
 - Microsoft Access ODBC Driver
-- Các thư viện Python (xem `requirements.txt`)
+- Python libraries (see `requirements.txt`)
 
-## Cài đặt
+## Installation
 
-1. Tạo môi trường ảo (khuyến nghị):
+1. Create a virtual environment (recommended):
    ```bash
    python -m venv venv
    .\venv\Scripts\activate
    ```
 
-2. Cài đặt các thư viện cần thiết:
+2. Install required libraries:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. Sao chép file cơ sở dữ liệu Access vào thư mục `data` hoặc cập nhật đường dẫn trong file `src/config.py`
+3. Copy your Access database file to the `data` directory or update the path in `src/config.py`
 
-## Sử dụng
+## Usage
 
-Chạy chương trình:
+Run the program:
 ```bash
 python -m src.main
 ```
 
-Các file CSV kết quả sẽ được lưu vào thư mục `data/output/`.
+The resulting CSV files will be saved in the `data/output/` directory.
 
-## Cấu trúc dự án
+## Project Structure
 
 ```
 importer_artikel_project/
-├── data/                   # Thư mục chứa dữ liệu
-│   └── output/             # Các file CSV xuất ra
-├── sql/                    # Các file SQL
-├── src/                    # Mã nguồn
-│   ├── __init__.py         # Khởi tạo package
-│   ├── config.py           # Cấu hình
-│   ├── database.py         # Kết nối cơ sở dữ liệu
-│   └── main.py             # Điểm vào chương trình
-├── requirements.txt        # Các thư viện phụ thuộc
-└── README.md               # Tài liệu hướng dẫn
+├── data/                   # Data directory
+│   └── output/             # Output CSV files
+├── sql/                    # SQL files
+├── src/                    # Source code
+│   ├── __init__.py         # Package initialization
+│   ├── config.py           # Configuration
+│   ├── database.py         # Database connection
+│   └── main.py             # Program entry point
+├── requirements.txt        # Dependencies
+└── README.md               # Documentation
 ```
 
-## Ghi chú
+## Notes
 
-- Chương trình sẽ tạo các file CSV với mã hóa UTF-8 và dấu phân cách là dấu chấm phẩy (;)
-- File log được lưu trong thư mục gốc với tên `importer.log`
+- The program will create CSV files with UTF-8 encoding and semicolon (;) as the delimiter
+- Log file is saved in the root directory as `importer.log`
