@@ -12,36 +12,25 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from src.database import execute_query
+from src.database import execute_query, read_sql_query
 from run_comparison_standalone import diff, diff1
 
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 if sys.stderr.encoding != 'utf-8':
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
-
-def read_sql_query(sql_file, aids=None):
-    """Read and format SQL query with optional AIDs"""
-    sql_path = project_root / "sql" / sql_file
-    if not sql_path.exists():
-        raise FileNotFoundError(f"SQL file not found: {sql_path}")
-    
-    sql_query = sql_path.read_text(encoding='utf-8').strip()
-    sql_query = '\n'.join(line for line in sql_query.split('\n') 
-                          if not line.strip().startswith('--'))
-    
-    if aids:
-        formatted_aids = ["'" + str(aid).replace("'", "''") + "'" for aid in aids]
-        sql_query = sql_query.replace("{aid_placeholders}", ", ".join(formatted_aids))
-    
-    return sql_query
+def extract_numbers(value):
+    #Extract numbers from a string
+    if pd.isna(value):
+        return ''
+    import re
+    numbers = re.findall(r'\d+', str(value))
+    return ''.join(numbers) if numbers else ''
 
 def import_sku_basis():
     try:
         if not diff:
             raise ValueError("No AIDs found")
-            
-        print(f"Processing {len(diff)} AIDs...")
         
         df = pd.DataFrame(execute_query(read_sql_query("get_skus.sql", diff)))
         if df.empty:
@@ -86,8 +75,6 @@ def import_sku_classification():
     try:
         if not diff:
             raise ValueError("No AIDs found")
-            
-        print(f"Processing {len(diff)} AIDs...")
         
         df = pd.DataFrame(execute_query(read_sql_query("get_skus.sql", diff)))
         if df.empty:
@@ -159,8 +146,6 @@ def import_sku_keyword():
     try:
         if not diff:
             raise ValueError("No AIDs found")
-            
-        print(f"Processing {len(diff)} AIDs for keywords...")
         
         df = pd.DataFrame(execute_query(read_sql_query("get_sku_keywords.sql", diff)))
         if df.empty:
@@ -179,8 +164,6 @@ def import_artikel_basis():
     try:
         if not diff:
             raise ValueError("No AIDs found")
-            
-        print(f"Processing {len(diff)} AIDs...")
         
         # Debug: Print the SQL query
         sql_query = read_sql_query("get_articles.sql", diff1)  
@@ -235,16 +218,10 @@ def import_artikel_basis():
         print(f"Error in import_artikel_basis: {e}")
         raise
 
-def extract_numbers(value):
-    """Extract numbers from a string"""
-    if pd.isna(value):
-        return ''
-    import re
-    numbers = re.findall(r'\d+', str(value))
-    return ''.join(numbers) if numbers else ''
+
 
 def import_artikel_classification():
-    """Import article classification data for AIDs not in ERP"""
+    #Import article classification data for AIDs not in ERP
     try:
         from run_comparison_standalone import diff1
         
@@ -341,14 +318,12 @@ def import_artikel_classification():
         raise
 
 def import_artikel_zuordnung():
-    """Import article association data (Zuordnung) for AIDs not in ERP"""
+    #Import article association data (Zuordnung) for AIDs not in ERP
     try:
         from run_comparison_standalone import diff1
         
         if not diff1:
             raise ValueError("No AIDs found")
-            
-        print(f"Processing {len(diff1)} AIDs for article associations...")
         
         # Read and execute the query from SQL file
         sql_query = read_sql_query("get_article_zuordnung.sql", diff1)
@@ -397,14 +372,12 @@ def import_artikel_zuordnung():
         raise
 
 def import_artikel_keyword():
-    """Import article keywords for AIDs not in ERP"""
+    #Import article keywords for AIDs not in ERP
     try:
         from run_comparison_standalone import diff1
         
         if not diff1:
             raise ValueError("No AIDs found")
-            
-        print(f"Processing {len(diff1)} AIDs for article keywords...")
         
         # Read and execute the query from SQL file
         sql_query = read_sql_query("get_article_keyword.sql", diff1)
@@ -438,7 +411,281 @@ def import_artikel_keyword():
         print(f"Error in import_artikel_keyword: {e}")
         import traceback
         traceback.print_exc()
+
+def import_artikel_text():
+    try:
+        from run_comparison_standalone import diff1
+        
+        if not diff1:
+            raise ValueError("No AIDs found")
+        
+        # Read and execute the query from SQL file
+        sql_query = read_sql_query("get_article_text_DE.sql", diff1)
+        df = pd.DataFrame(execute_query(sql_query))
+        
+        if df.empty:
+            print("No article text data returned")
+            return None
+        
+        # Process the data
+        # Replace NaN values with empty string
+        df = df.fillna('')
+        
+        # Define text classifications and their corresponding text content
+        text_classifications = [
+            ('Webshoptext', df['ArtText'] + df['ArtSpec1'] + df['ArtSpec2']),
+            ('Artikeltext', df['ArtText'] + df['ArtSpec1'] + df['ArtSpec2']),
+            ('Katalogtext', df['ArtText'] + df['ArtSpec1'] + df['ArtSpec2']),
+            ('Vertriebstext', df['ArtBem'] + df['ArtText'] + df['VEText'] + df['VEText2'] + df['VEText_SP']),
+            ('Rechnungstext', df['ArtBem'])
+        ]
+        
+        output_files = []
+        
+        for classification, text_content in text_classifications:
+            # Create a copy of the base dataframe for this classification
+            df_result = df[['ArtikelNeu']].copy()
+            df_result.rename(columns={'ArtikelNeu': 'aid'}, inplace=True)
+            
+            # Add required columns
+            df_result['company'] = 0
+            df_result['language'] = 'DE'
+            df_result['textClassification'] = classification
+            df_result['text'] = text_content
+            df_result['text'] = df_result['text'].str.replace( '\r\n', '||')
+            
+            # Reorder columns
+            df_result = df_result[['aid', 'company', 'textClassification', 'text', 'language']]
+            
+            # Create output filename based on classification
+            output_file = OUTPUT_DIR / f"article_text_{classification.lower()}.csv"
+            df_result.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
+            
+            if output_file.exists():
+                output_files.append(output_file)
+                print(f"{classification} data exported to: {output_file}")
+        
+        return output_files if output_files else None
+        
+    except Exception as e:
+        print(f"Error in import_artikel_text: {e}")
+        import traceback
+        traceback.print_exc()
         raise
+
+def import_sku_text():
+    try:
+        from run_comparison_standalone import diff
+        
+        if not diff:
+            raise ValueError("No AIDs found")
+        
+        # Read and execute the query from SQL file
+        sql_query = read_sql_query("get_sku_text_DE.sql", diff)
+        df = pd.DataFrame(execute_query(sql_query))
+        
+        if df.empty:
+            print("No article text data returned")
+            return None
+        
+        # Process the data
+        # Replace NaN values with empty string
+        df = df.fillna('')
+        
+        # Define text classifications and their corresponding text content
+        text_classifications = [
+            ('Webshoptext', df['ArtText'] + df['ArtSpec1'] + df['ArtSpec2']),
+            ('Artikeltext', df['ArtText'] + df['ArtSpec1'] + df['ArtSpec2']),
+            ('Katalogtext', df['ArtText'] + df['ArtSpec1'] + df['ArtSpec2']),
+            ('Vertriebstext', df['ArtBem'] + df['ArtText'] + df['VEText'] + df['VEText2'] + df['VEText_SP']),
+            ('Rechnungstext', df['ArtBem'])
+        ]
+        
+        output_files = []
+        
+        for classification, text_content in text_classifications:
+            # Create a copy of the base dataframe for this classification
+            df_result = df[['ArtikelCode']].copy()
+            df_result.rename(columns={'ArtikelCode': 'aid'}, inplace=True)
+            
+            # Add required columns
+            df_result['company'] = 0
+            df_result['language'] = 'DE'
+            df_result['textClassification'] = classification
+            df_result['text'] = text_content
+            df_result['text'] = df_result['text'].str.replace( '\r\n', '||')
+            
+            # Reorder columns
+            df_result = df_result[['aid', 'company', 'textClassification', 'text', 'language']]
+            
+            # Create output filename based on classification
+            output_file = OUTPUT_DIR / f"sku_text_{classification.lower()}.csv"
+            df_result.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
+            
+            if output_file.exists():
+                output_files.append(output_file)
+                print(f"{classification} data exported to: {output_file}")
+        
+        return output_files if output_files else None
+    except Exception as e:
+        print(f"Error in import_sku_text: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+
+def import_artikel_variant():
+    try:
+        from run_comparison_standalone import diff1
+        
+        if not diff1:
+            raise ValueError("No AIDs found in diff")
+            
+        print(f"Processing {len(diff1)} AIDs for variants...")
+        
+        # Read and execute the query from SQL file
+        sql_query = read_sql_query("get_variant.sql", diff1)
+        df = pd.DataFrame(execute_query(sql_query))
+        
+        if df.empty:
+            print("No variant data returned from database")
+            return None
+        
+        # Process the data
+        #df['company'] = 0
+        #df['classification_system'] = 'Warengruppensystem'
+        
+        # Define features mapping with proper values
+        features = [
+            #('variant_aid', df['sku']),
+            ('Size_Größe', df['Größe']),
+            ('Colour_Farbe', df['Farbe']),
+        ]
+        
+        # Add features to dataframe and create is_mandatory columns
+        for i, (name, values) in enumerate(features):
+            df[f'feature[{i}]'] = name
+            df[f'feature_value[{i}]'] = values
+            df[f'is_mandatory_{i}'] = 1  # Temporary unique names
+        
+        # Create a list of columns for the final output
+        output_columns = ['aid', 'variant_aid', 'company', 'classification_system']
+        for i in range(len(features)):
+            output_columns.extend([f'feature[{i}]', f'feature_value[{i}]', 'is_mandatory'])
+        
+        # Create result DataFrame with all required columns
+        result_df = pd.DataFrame(index=df.index)
+        
+        # Add required columns
+        result_df['aid'] = df['aid']
+        result_df['variant_aid'] = df['sku']  # Using 'sku' from SQL query as variant_aid
+        result_df['company'] = 0
+        result_df['classification_system'] = 'Warengruppensystem'
+        
+        # Add feature columns and is_mandatory columns
+        for i in range(len(features)):
+            result_df[f'feature[{i}]'] = df.get(f'feature[{i}]', '')
+            result_df[f'feature_value[{i}]'] = df.get(f'feature_value[{i}]', '')
+            result_df['is_mandatory'] = df.get(f'is_mandatory_{i}', 1)
+        
+        # Reorder columns to match the desired output
+        result_df = result_df[output_columns]
+
+        
+        # Save to CSV with proper encoding
+        output_file = OUTPUT_DIR / "variant_export.csv"
+        result_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
+        
+        print(f"Variant data exported successfully to: {output_file}")
+        print(f"Total variants processed: {len(result_df)}")
+        
+        return output_file if output_file.exists() else None
+        
+    except Exception as e:
+        print(f"Error in import_variant: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+        
+    except Exception as e:
+        print(f"Error in import_variant: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+    
+def import_sku_variant():
+    try:
+        from run_comparison_standalone import diff
+        
+        if not diff:
+            raise ValueError("No AIDs found in diff")
+            
+        print(f"Processing {len(diff)} AIDs for variants...")
+        
+        # Read and execute the query from SQL file
+        sql_query = read_sql_query("get_variant_sku.sql", diff)
+        df = pd.DataFrame(execute_query(sql_query))
+        
+        if df.empty:
+            print("No variant data returned from database")
+            return None
+        
+        # Define features mapping with proper values
+        features = [
+            ('Size_Größe', df['Größe']),
+            ('Colour_Farbe', df['Farbe']),
+        ]
+        
+        # Add features to dataframe and create is_mandatory columns
+        for i, (name, values) in enumerate(features):
+            df[f'feature[{i}]'] = name
+            df[f'feature_value[{i}]'] = values
+            df[f'is_mandatory_{i}'] = 1  # Temporary unique names
+        
+        # Create a list of columns for the final output
+        output_columns = ['aid', 'variant_aid', 'company', 'classification_system']
+        for i in range(len(features)):
+            output_columns.extend([f'feature[{i}]', f'feature_value[{i}]', 'is_mandatory'])
+        
+        # Create result DataFrame with all required columns
+        result_df = pd.DataFrame(index=df.index)
+        
+        # Add required columns
+        result_df['aid'] = df['aid']
+        result_df['variant_aid'] = df['variant_aid']  # Using 'sku' from SQL query as variant_aid
+        result_df['company'] = 0
+        result_df['classification_system'] = 'Warengruppensystem'
+        
+        # Add feature columns and is_mandatory columns
+        for i in range(len(features)):
+            result_df[f'feature[{i}]'] = df.get(f'feature[{i}]', '')
+            result_df[f'feature_value[{i}]'] = df.get(f'feature_value[{i}]', '')
+            result_df['is_mandatory'] = df.get(f'is_mandatory_{i}', 1)
+        
+        # Reorder columns to match the desired output
+        result_df = result_df[output_columns]
+
+        
+        # Save to CSV with proper encoding
+        output_file = OUTPUT_DIR / "VARIANT_IMPORT - SKU-Variantenverknüpfung Import.csv"
+        result_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
+        
+        print(f"Variant data exported successfully to: {output_file}")
+        print(f"Total variants processed: {len(result_df)}")
+        
+        return output_file if output_file.exists() else None
+        
+    except Exception as e:
+        print(f"Error in import_variant: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+        
+    except Exception as e:
+        print(f"Error in import_variant: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+
 
 # This allows the script to be run directly
 if __name__ == "__main__":
@@ -449,3 +696,7 @@ if __name__ == "__main__":
     import_artikel_classification()
     import_artikel_zuordnung()
     import_artikel_keyword()
+    import_artikel_text()
+    import_sku_text()
+    import_artikel_variant()
+    import_sku_variant()

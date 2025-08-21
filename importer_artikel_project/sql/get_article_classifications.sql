@@ -28,3 +28,4 @@ SELECT
 FROM t_Art_MegaBase m 
 INNER JOIN t_Art_Flags f ON m.ArtNr = f.ArtNr 
 WHERE m.Marke IN ('Corporate', 'EXCD', 'XO')
+AND m.ArtBasis IN ({aid_placeholders})

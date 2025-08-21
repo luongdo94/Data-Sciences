@@ -95,3 +95,22 @@ def read_csv_file(file_path, encoding='utf-8-sig', delimiter=';', required_colum
             raise ValueError(f"Missing columns: {', '.join(missing)}")
     
     return df
+
+
+def read_sql_query(sql_file, aids=None):
+    """Read and format SQL query with optional AIDs"""
+    from pathlib import Path
+    
+    sql_path = Path(__file__).parent.parent / "sql" / sql_file
+    if not sql_path.exists():
+        raise FileNotFoundError(f"SQL file not found: {sql_path}")
+    
+    sql_query = sql_path.read_text(encoding='utf-8').strip()
+    sql_query = '\n'.join(line for line in sql_query.split('\n') 
+                          if not line.strip().startswith('--'))
+    
+    if aids:
+        formatted_aids = ["'" + str(aid).replace("'", "''") + "'" for aid in aids]
+        sql_query = sql_query.replace("{aid_placeholders}", ", ".join(formatted_aids))
+    
+    return sql_query

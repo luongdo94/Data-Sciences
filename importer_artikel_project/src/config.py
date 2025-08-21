@@ -12,7 +12,20 @@ for directory in [OUTPUT_DIR, SQL_DIR, DATA_DIR]:
 
 def get_connection_string(mdb_path):
     """Create a connection string for any .mdb or .accdb file."""
-    return f"DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};DBQ={mdb_path};"
+    # Try with the newer driver first, fall back to older if needed
+    drivers = [
+        "Microsoft Access Driver (*.mdb, *.accdb)",
+        "Microsoft Access Driver (*.mdb)",
+        "Microsoft Access Driver (*.mdb, *.accdb)"
+    ]
+    
+    import pyodbc
+    available_drivers = [d for d in drivers if any(d in x for x in pyodbc.drivers())]
+    
+    if not available_drivers:
+        raise RuntimeError("No suitable Microsoft Access ODBC driver found. Please install 'Microsoft Access Database Engine 2016 Redistributable'")
+        
+    return f"DRIVER={{{available_drivers[0]}}};DBQ={mdb_path};"
 
 # Default connection strings
 CONN_STR = get_connection_string(MDB_FILE)
