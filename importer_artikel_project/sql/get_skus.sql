@@ -41,7 +41,8 @@ SELECT
                 f.flag_outdoor AS outdoor,
                 f.flag_plussize AS oversize,
                 f.isNoLabel AS label,
-                f.isErw AS erw
+                f.isErw AS erw,
+                t.WebVEText as Oeko_MadeInGreen
             FROM 
                 ((t_Art_Mega_SKU sku
                 INNER JOIN t_Art_Text_DE t ON sku.ArtNr = t.ArtNr)

@@ -84,14 +84,13 @@ def import_sku_classification():
         # Add classification columns
         df['company'] = 0
         df['classification_system'] = 'Warengruppensystem'
-        df['product_group'] = df['Marke']
         df['product_group_superior'] = df['Marke'] + '||Produktlinie||ROOT'
         df['ArtikelCode'] = df['aid']
         
         # Define feature mappings
         features = [
             ('Grammatur', df['Grammatur'].str.extract(r'(\d+)')[0]),
-            ('Oeko_MadeInGreen', ''),
+            ('Oeko_MadeInGreen', df['Oeko_MadeInGreen']),
             ('Partnerlook', df['Artikel_Partner'].str[:4]),
             ('Sortierung', df['sku_ArtSort']),
             ('Fabric_Herstellung', df['Fabric_Herstellung']),
@@ -498,7 +497,8 @@ def import_sku_text():
             ('Artikeltext', df['ArtText'] + df['ArtSpec1'] + df['ArtSpec2']),
             ('Katalogtext', df['ArtText'] + df['ArtSpec1'] + df['ArtSpec2']),
             ('Vertriebstext', df['ArtBem'] + df['ArtText'] + df['VEText'] + df['VEText2'] + df['VEText_SP']),
-            ('Rechnungstext', df['ArtBem'])
+            ('Rechnungstext', df['ArtBem']),
+            ('Pflegehinweis', df['Pflegekennzeichnung'])
         ]
         
         output_files = []
