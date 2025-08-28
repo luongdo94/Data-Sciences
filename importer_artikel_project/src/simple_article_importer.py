@@ -424,18 +424,18 @@ def import_artikel_text():
         
         if df.empty:
             print("No article text data returned")
-            return None
+            return []
         
         # Process the data
-        # Replace NaN values with empty string
-        df = df.fillna('')
+        # Replace NaN values with empty string and strip whitespace
+        df = df.fillna('').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
         
         # Define text classifications and their corresponding text content
         text_classifications = [
-            ('Webshoptext', df['ArtText'] + df['ArtSpec1'] + df['ArtSpec2']),
-            ('Artikeltext', df['ArtText'] + df['ArtSpec1'] + df['ArtSpec2']),
-            ('Katalogtext', df['ArtText'] + df['ArtSpec1'] + df['ArtSpec2']),
-            ('Vertriebstext', df['ArtBem'] + df['ArtText'] + df['VEText'] + df['VEText2'] + df['VEText_SP']),
+            ('Webshoptext', df['ArtText'] + ' ' + df['ArtSpec1'] + ' ' + df['ArtSpec2']),
+            ('Artikeltext', df['ArtText'] + ' ' + df['ArtSpec1'] + ' ' + df['ArtSpec2']),
+            ('Katalogtext', df['ArtText'] + ' ' + df['ArtSpec1'] + ' ' + df['ArtSpec2']),
+            ('Vertriebstext', df['ArtBem'] + ' ' + df['ArtText'] + ' ' + df['VEText'] + ' ' + df['VEText2'] + ' ' + df['VEText_SP']),
             ('Rechnungstext', df['ArtBem'])
         ]
         
@@ -450,8 +450,24 @@ def import_artikel_text():
             df_result['company'] = 0
             df_result['language'] = 'DE'
             df_result['textClassification'] = classification
-            df_result['text'] = text_content
-            df_result['text'] = df_result['text'].str.replace( '\r\n', '||')
+            df_result['text'] = text_content.str.strip()  # Remove extra whitespace
+            
+            # Remove rows with empty text
+            df_result = df_result[df_result['text'].str.len() > 0]
+            
+            if df_result.empty:
+                print(f"No data for {classification} after removing empty text")
+                continue
+                
+            # Remove duplicates based on aid and textClassification
+            df_result = df_result.drop_duplicates(subset=['aid', 'textClassification', 'text'])
+            
+            # For each aid, keep only the first occurrence of each textClassification
+            df_result = df_result.drop_duplicates(subset=['aid', 'textClassification'])
+            
+            # Clean up text: replace multiple spaces and line breaks
+            df_result['text'] = df_result['text'].str.replace(r'\s+', ' ', regex=True)
+            df_result['text'] = df_result['text'].str.replace('\r\n', '||')
             
             # Reorder columns
             df_result = df_result[['aid', 'company', 'textClassification', 'text', 'language']]
@@ -462,7 +478,7 @@ def import_artikel_text():
             
             if output_file.exists():
                 output_files.append(output_file)
-                print(f"{classification} data exported to: {output_file}")
+                print(f"{classification} data exported with {len(df_result)} rows to: {output_file}")
         
         return output_files if output_files else None
         
@@ -485,20 +501,19 @@ def import_sku_text():
         
         if df.empty:
             print("No article text data returned")
-            return None
+            return []
         
         # Process the data
-        # Replace NaN values with empty string
-        df = df.fillna('')
+        # Replace NaN values with empty string and strip whitespace
+        df = df.fillna('').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
         
         # Define text classifications and their corresponding text content
         text_classifications = [
-            ('Webshoptext', df['ArtText'] + df['ArtSpec1'] + df['ArtSpec2']),
-            ('Artikeltext', df['ArtText'] + df['ArtSpec1'] + df['ArtSpec2']),
-            ('Katalogtext', df['ArtText'] + df['ArtSpec1'] + df['ArtSpec2']),
-            ('Vertriebstext', df['ArtBem'] + df['ArtText'] + df['VEText'] + df['VEText2'] + df['VEText_SP']),
-            ('Rechnungstext', df['ArtBem']),
-            ('Pflegehinweis', df['Pflegekennzeichnung'])
+            ('Webshoptext', df['ArtText'] + ' ' + df['ArtSpec1'] + ' ' + df['ArtSpec2']),
+            ('Artikeltext', df['ArtText'] + ' ' + df['ArtSpec1'] + ' ' + df['ArtSpec2']),
+            ('Katalogtext', df['ArtText'] + ' ' + df['ArtSpec1'] + ' ' + df['ArtSpec2']),
+            ('Vertriebstext', df['ArtBem'] + ' ' + df['ArtText'] + ' ' + df['VEText'] + ' ' + df['VEText2'] + ' ' + df['VEText_SP']),
+            ('Rechnungstext', df['ArtBem'])
         ]
         
         output_files = []
@@ -512,8 +527,24 @@ def import_sku_text():
             df_result['company'] = 0
             df_result['language'] = 'DE'
             df_result['textClassification'] = classification
-            df_result['text'] = text_content
-            df_result['text'] = df_result['text'].str.replace( '\r\n', '||')
+            df_result['text'] = text_content.str.strip()  # Remove extra whitespace
+            
+            # Remove rows with empty text
+            df_result = df_result[df_result['text'].str.len() > 0]
+            
+            if df_result.empty:
+                print(f"No data for {classification} after removing empty text")
+                continue
+                
+            # Remove duplicates based on aid and textClassification
+            df_result = df_result.drop_duplicates(subset=['aid', 'textClassification', 'text'])
+            
+            # For each aid, keep only the first occurrence of each textClassification
+            df_result = df_result.drop_duplicates(subset=['aid', 'textClassification'])
+            
+            # Clean up text: replace multiple spaces and line breaks
+            df_result['text'] = df_result['text'].str.replace(r'\s+', ' ', regex=True)
+            df_result['text'] = df_result['text'].str.replace('\r\n', '||')
             
             # Reorder columns
             df_result = df_result[['aid', 'company', 'textClassification', 'text', 'language']]
@@ -524,7 +555,7 @@ def import_sku_text():
             
             if output_file.exists():
                 output_files.append(output_file)
-                print(f"{classification} data exported to: {output_file}")
+                print(f"{classification} data exported with {len(df_result)} rows to: {output_file}")
         
         return output_files if output_files else None
     except Exception as e:
@@ -554,23 +585,23 @@ def import_artikel_variant():
         #df['company'] = 0
         #df['classification_system'] = 'Warengruppensystem'
         
-        # Define features mapping with proper values
-        features = [
+        # Define attributes mapping with proper values
+        attributes = [
             #('variant_aid', df['sku']),
             ('Size_Größe', df['Größe']),
             ('Colour_Farbe', df['Farbe']),
         ]
         
-        # Add features to dataframe and create is_mandatory columns
-        for i, (name, values) in enumerate(features):
-            df[f'feature[{i}]'] = name
-            df[f'feature_value[{i}]'] = values
-            df[f'is_mandatory_{i}'] = 1  # Temporary unique names
+        # Add attributes to dataframe and create is_mandatory  columns
+        for i, (name, values) in enumerate(attributes):
+            df[f'attribute[{i}]'] = name
+            df[f'attribute_value[{i}]'] = values
+            df[f'is_mandatory[{i}]'] = 1  # Temporary unique names
         
         # Create a list of columns for the final output
         output_columns = ['aid', 'variant_aid', 'company', 'classification_system']
-        for i in range(len(features)):
-            output_columns.extend([f'feature[{i}]', f'feature_value[{i}]', 'is_mandatory'])
+        for i in range(len(attributes)):
+            output_columns.extend([f'attribute[{i}]', f'attribute_value[{i}]', f'is_mandatory[{i}]'])
         
         # Create result DataFrame with all required columns
         result_df = pd.DataFrame(index=df.index)
@@ -581,11 +612,11 @@ def import_artikel_variant():
         result_df['company'] = 0
         result_df['classification_system'] = 'Warengruppensystem'
         
-        # Add feature columns and is_mandatory columns
-        for i in range(len(features)):
-            result_df[f'feature[{i}]'] = df.get(f'feature[{i}]', '')
-            result_df[f'feature_value[{i}]'] = df.get(f'feature_value[{i}]', '')
-            result_df['is_mandatory'] = df.get(f'is_mandatory_{i}', 1)
+        # Add attribute columns and is_mandatory  columns
+        for i in range(len(attributes)):
+            result_df[f'attribute[{i}]'] = df.get(f'attribute[{i}]', '')
+            result_df[f'attribute_value[{i}]'] = df.get(f'attribute_value[{i}]', '')
+            result_df[f'is_mandatory[{i}]'] = df.get(f'is_mandatory[{i}]', 1)
         
         # Reorder columns to match the desired output
         result_df = result_df[output_columns]
@@ -629,22 +660,22 @@ def import_sku_variant():
             print("No variant data returned from database")
             return None
         
-        # Define features mapping with proper values
-        features = [
+        # Define attributes mapping with proper values
+        attributes = [
             ('Size_Größe', df['Größe']),
             ('Colour_Farbe', df['Farbe']),
         ]
         
-        # Add features to dataframe and create is_mandatory columns
-        for i, (name, values) in enumerate(features):
-            df[f'feature[{i}]'] = name
-            df[f'feature_value[{i}]'] = values
-            df[f'is_mandatory_{i}'] = 1  # Temporary unique names
+        # Add attributes to dataframe and create is_mandatory  columns
+        for i, (name, values) in enumerate(attributes):
+            df[f'attribute[{i}]'] = name
+            df[f'attribute_value[{i}]'] = values
+            df[f'is_mandatory[{i}]'] = 1  # Temporary unique names
         
         # Create a list of columns for the final output
         output_columns = ['aid', 'variant_aid', 'company', 'classification_system']
-        for i in range(len(features)):
-            output_columns.extend([f'feature[{i}]', f'feature_value[{i}]', 'is_mandatory'])
+        for i in range(len(attributes)):
+            output_columns.extend([f'attribute[{i}]', f'attribute_value[{i}]', f'is_mandatory[{i}]'])
         
         # Create result DataFrame with all required columns
         result_df = pd.DataFrame(index=df.index)
@@ -655,11 +686,11 @@ def import_sku_variant():
         result_df['company'] = 0
         result_df['classification_system'] = 'Warengruppensystem'
         
-        # Add feature columns and is_mandatory columns
-        for i in range(len(features)):
-            result_df[f'feature[{i}]'] = df.get(f'feature[{i}]', '')
-            result_df[f'feature_value[{i}]'] = df.get(f'feature_value[{i}]', '')
-            result_df['is_mandatory'] = df.get(f'is_mandatory_{i}', 1)
+        # Add attribute columns and is_mandatory  columns
+        for i in range(len(attributes)):
+            result_df[f'attribute[{i}]'] = df.get(f'attribute[{i}]', '')
+            result_df[f'attribute_value[{i}]'] = df.get(f'attribute_value[{i}]', '')
+            result_df[f'is_mandatory[{i}]'] = df.get(f'is_mandatory[{i}]', 1)
         
         # Reorder columns to match the desired output
         result_df = result_df[output_columns]

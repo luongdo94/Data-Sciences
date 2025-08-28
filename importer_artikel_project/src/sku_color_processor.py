@@ -1,7 +1,7 @@
 import pandas as pd
 import pyodbc
 import re
-from config import OUTPUT_DIR, MDB_DATA
+from src.config import OUTPUT_DIR, MDB_DATA
 
 def extract_color(sku):
     if not isinstance(sku, str):

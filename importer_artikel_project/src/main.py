@@ -1,5 +1,11 @@
 import warnings
-from simple_article_importer import (
+import sys
+from pathlib import Path
+
+# Add parent directory to path to allow direct script execution
+sys.path.append(str(Path(__file__).parent.parent))
+
+from src.simple_article_importer import (
     import_sku_basis, 
     import_sku_classification, 
     import_sku_keyword,
@@ -12,9 +18,8 @@ from simple_article_importer import (
     import_sku_variant,
     import_artikel_variant
 )
-from sku_color_processor import process_colors
-from pathlib import Path
-from fix_column_name import fix_column_names
+from src.sku_color_processor import process_colors
+
 
 warnings.filterwarnings('ignore', category=UserWarning, 
                       message='pandas only supports SQLAlchemy connectable')
@@ -33,7 +38,7 @@ def process_sku_data():
     final_sku_file = sku_basis_file.with_name("SKU - Artikel(Neuanlage).csv")
     final_sku_classification_file = sku_classification_file.with_name("SKU_CLASSIFICATION - Artikel-Merkmale.csv")
     final_sku_keyword_file = sku_keyword_file.with_name("SKU_KEYWORD - Artikel-Schlüsselworte.csv")
-    #final_sku_variant_file = sku_variant_file.with_name("VARIANT_IMPORT - SKU-Variantenverknüpfung Import.csv")
+    final_sku_variant_file = sku_variant_file.with_name("VARIANT_IMPORT - SKU-Variantenverknüpfung Import.csv")
     
     # Process colors for basic files
     process_colors(csv_file_path=sku_basis_file, sku_column='aid')
@@ -56,7 +61,7 @@ def process_sku_data():
     sku_basis_file.replace(final_sku_file)
     sku_classification_file.replace(final_sku_classification_file)
     sku_keyword_file.replace(final_sku_keyword_file)
-    fix_column_names(sku_variant_file)
+    sku_variant_file.replace(final_sku_variant_file)
 
 def process_article_data():
     artikel_basis_file = import_artikel_basis()
