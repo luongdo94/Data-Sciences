@@ -41,7 +41,7 @@ def process_colors(csv_file_path=None, sku_column='aid'):
         if sku_column_name not in original_df.columns:
             raise ValueError(f"Column '{sku_column_name}' not found in the CSV file")
 
-        # Create a copy for processing
+        # Create a copy for processing, the color will be replaced with the ERP color if it not in ew_Farben
         sku_df = original_df.copy()
         sku_df['temp_color'] = sku_df[sku_column_name].apply(extract_color)
         sku_df['new_color'] = sku_df['temp_color'].map(color_map).fillna(sku_df['temp_color'])
@@ -55,6 +55,7 @@ def process_colors(csv_file_path=None, sku_column='aid'):
                 return row[sku_column_name]
                 
             color_part = parts[1].split('/')[0].strip()
+            
             if row['temp_color'] != row['new_color']:
                 color_part = row['new_color']
                 

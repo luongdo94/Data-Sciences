@@ -1,0 +1,1 @@
+Select ArtBasis, ArtikelCode from t_Art_Mega_SKU 

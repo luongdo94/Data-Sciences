@@ -239,7 +239,7 @@ def import_artikel_classification():
         
         # Process the data
         df['Grammatur'] = df['Grammatur'].apply(extract_numbers)
-        df['Gender'] = df['Gender'].replace('Kinder', '')
+        df['Farbe'] = df['Farbe'].str.replace(r'steel\s*grey', 'steel gray', case=False, regex=True)
         
         # Define features mapping
         features = [

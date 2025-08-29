@@ -3,7 +3,7 @@ SELECT
                 0 as company,
                 t.SuchText as keyword_list,
                 'de' as language,
-                ',' as seperator
+                ',' as separator
             FROM (t_Art_MegaBase m
             INNER JOIN t_Art_Mega_SKU sku ON m.ArtNr = sku.ArtNr)
             INNER JOIN t_Art_Text_DE t ON sku.ArtNr = t.ArtNr
