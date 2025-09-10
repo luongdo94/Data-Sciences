@@ -1,11 +1,12 @@
 SELECT
-    sku.ArtikelCode AS aid,
-    m.ArtBasis AS variant_aid,
+    sku.ArtikelCode AS variant_aid,
+    m.ArtBasis AS aid,
     sku.Größe AS Größe,
     sku.Hauptfarbe AS Farbgruppe,
     sku.FarbeNeu AS Farbe,
     sku.isColorCombination AS zweifarbig,
-    m.Grammatur AS Grammatur
+    m.Grammatur AS Grammatur,
+    m.Ursprungsland
 FROM
     (
         (t_Art_Mega_SKU sku

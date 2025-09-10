@@ -86,6 +86,7 @@ def import_sku_classification():
         df['classification_system'] = 'Warengruppensystem'
         df['product_group_superior'] = df['Marke'] + '||Produktlinie||ROOT'
         df['ArtikelCode'] = df['aid']
+        df['Farbe'] = df['Farbe'].str.split('/').str[0].str.strip()
         
         # Define feature mappings
         features = [
@@ -239,7 +240,6 @@ def import_artikel_classification():
         
         # Process the data
         df['Grammatur'] = df['Grammatur'].apply(extract_numbers)
-        df['Farbe'] = df['Farbe'].str.replace(r'steel\s*grey', 'steel gray', case=False, regex=True)
         
         # Define features mapping
         features = [
@@ -664,6 +664,7 @@ def import_sku_variant():
         attributes = [
             ('Size_Größe', df['Größe']),
             ('Colour_Farbe', df['Farbe']),
+            ('Ursprungsland', df['Ursprungsland'].str[:2])
         ]
         
         # Add attributes to dataframe and create is_mandatory  columns
@@ -717,7 +718,243 @@ def import_sku_variant():
         traceback.print_exc()
         raise
 
+def import_artikel_pricestaffeln():
+    try:
+        # Read and execute the query from SQL file
+        sql_query = read_sql_query("get_article_price.sql", None)
+        df = pd.DataFrame(execute_query(sql_query))
+        
+        if df.empty:
+            print("No price data returned from database")
+            return None
+        
+        # Rename columns to match expected format
+        df = df.rename(columns={
+            'ArtikelCode': 'aid',
+            'Preis': 'price',
+            'Menge_von': 'quantity_from',
+            'Menge_bis': 'quantity_to'
+        })
+        
+        # Pivot the data to get price tiers as columns
+        df_pivot = df.pivot(
+            index='aid',
+            columns='Staffel',
+            values='price'
+        ).reset_index()
+        
+        # Rename columns for clarity
+        df_pivot = df_pivot.rename(columns={
+            1: 'price_1',
+            2: 'price_2',
+            3: 'price_3'
+        })
+        
+        # Get unique article IDs and ensure we have exactly one row per article
+        df_pivot = df_pivot.drop_duplicates(subset=['aid'], keep='first')
+        
+        # Create final dataframe with required structure
+        result = []
+        pricelists = ['Preisstaffel 1-3', 'Preisstaffel 2-3']
+        
+        # Create two rows for each article (one for each pricelist)
+        for _, row in df_pivot.iterrows():
+            for pricelist in pricelists:
+                row_dict = row.to_dict()
+                row_dict['pricelist'] = pricelist
+                result.append(row_dict)
+        
+        final_df = pd.DataFrame(result)
+        
+        # Add required columns
+        final_df['company'] = '1'
+        final_df['currency'] = 'EUR'
+        final_df['unit'] = 'Stk'
+        final_df['valid_from'] = datetime.now().strftime("%Y%m%d")
+        final_df['limitValidity'] = '0'
+        
+        # Set price tiers based on pricelist
+        final_df['price[0]'] = final_df['price_1']
+        final_df['amountFrom[0]'] = '1'
+        final_df['discountable_idx[0]'] = 'J'
+        final_df['surchargeable_idx[0]'] = 'J'
+        
+        if 'Preisstaffel 2-3' in final_df['pricelist'].values:
+            final_df.loc[final_df['pricelist'] == 'Preisstaffel 2-3', 'price[1]'] = final_df['price_2']
+            final_df.loc[final_df['pricelist'] == 'Preisstaffel 2-3', 'price[2]'] = final_df['price_3']
+            final_df.loc[final_df['pricelist'] == 'Preisstaffel 1-3', 'price[1]'] = final_df['price_2']
+            final_df.loc[final_df['pricelist'] == 'Preisstaffel 1-3', 'price[2]'] = final_df['price_3']
+            
+            final_df['amountFrom[1]'] = '100'
+            final_df['discountable_idx[1]'] = 'J'
+            final_df['surchargeable_idx[1]'] = 'J'
+            final_df['amountFrom[2]'] = '1000'       
+            final_df['discountable_idx[2]'] = 'J'
+            final_df['surchargeable_idx[2]'] = 'J'
+        
+        # Reorder columns
+        columns = [
+            'aid', 'company', 'currency', 'unit', 'pricelist', 
+            'valid_from', 'limitValidity', 
+            'price[0]', 'amountFrom[0]', 'discountable_idx[0]', 'surchargeable_idx[0]', 
+            'price[1]', 'amountFrom[1]', 'discountable_idx[1]', 'surchargeable_idx[1]', 
+            'price[2]', 'amountFrom[2]', 'discountable_idx[2]', 'surchargeable_idx[2]'
+        ]
+        final_df = final_df[columns]
+        
+        # Save to CSV with proper encoding
+        output_file = OUTPUT_DIR / "article_price.csv"
+        final_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
+        
+        print(f"Price data exported successfully to: {output_file}")
+        
+        return output_file if output_file.exists() else None
+        
+    except Exception as e:
+        print(f"Error in import_artikel_price: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None
+        raise
+    
+def import_artikel_basicprice():
+    try:
+        # Read and execute the query from SQL file
+        sql_query = read_sql_query("get_article_price.sql", None)
+        df = pd.DataFrame(execute_query(sql_query))
+        
+        if df.empty:
+            print("No price data returned from database")
+            return None
+        
+        # Add required columns
+        filtered_df = df.loc[df['Staffel'] == 1].copy()
+        filtered_df['aid'] = filtered_df['ArtikelCode']
+        filtered_df['company'] = '1'
+        filtered_df['currency'] = 'EUR'
+        filtered_df['unit'] = 'Stk'
+        filtered_df['valid_from'] = datetime.now().strftime("%Y%m%d")
+        filtered_df['limitValidity'] = '0'
+        filtered_df['discountable'] = 'J'
+        filtered_df['surchargeable'] = 'J'
+        filtered_df['basicPrice'] = filtered_df['Preis']
+        #Reorder columns
+        columns = [
+            'aid', 'company', 'basicPrice', 'currency', 'unit', 'limitValidity', 
+            'discountable', 'surchargeable', 'valid_from'
+        ]
+        filtered_df = filtered_df[columns]
+    # Save to CSV with proper encoding
+        output_file = OUTPUT_DIR / "article_basicprice.csv"
+        filtered_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
+        
+        print(f"Price data exported successfully to: {output_file}")
+        
+        return output_file if output_file.exists() else None
+    except Exception as e:
+        print(f"Error in import_artikel_basicprice: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None
+        raise
 
+def import_artikel_preisstufe_3_7():   
+    try:
+        # Read and execute the query from SQL file
+        sql_query = read_sql_query("get_article_price.sql", None)
+        df = pd.DataFrame(execute_query(sql_query))
+        
+        if df.empty:
+            print("No price data returned from database")
+            return None
+        
+        # Rename columns to match expected format
+        df = df.rename(columns={
+            'ArtikelCode': 'aid',
+            'Preis': 'price',
+            'Menge_von': 'quantity_from',
+            'Menge_bis': 'quantity_to'
+        })
+        
+        # Pivot the data to get price tiers as columns
+        df_pivot = df.pivot(
+            index='aid',
+            columns='Staffel',
+            values='price'
+        ).reset_index()
+        
+        # Rename columns for clarity
+        df_pivot = df_pivot.rename(columns={
+            3: 'price_3',
+            4: 'price_4',
+            5: 'price_5',
+            6: 'price_6',
+            7: 'price_7'
+        })
+        
+        # Get unique article IDs and ensure we have exactly one row per article
+        df_pivot = df_pivot.drop_duplicates(subset=['aid'], keep='first')
+        
+        # Create final dataframe with required structure
+        result = []
+        pricelists = ['Preisstufe 3', 'Preisstufe 4', 'Preisstufe 5', 'Preisstufe 6', 'Preisstufe 7']
+        
+        # Create two rows for each article (one for each pricelist)
+        for _, row in df_pivot.iterrows():
+            for pricelist in pricelists:
+                row_dict = row.to_dict()
+                row_dict['pricelist'] = pricelist
+                result.append(row_dict)
+        
+        final_df = pd.DataFrame(result)
+        print(final_df)
+        
+        # Add required columns
+        final_df['company'] = '1'
+        final_df['currency'] = 'EUR'
+        final_df['unit'] = 'Stk'
+        final_df['valid_from'] = datetime.now().strftime("%Y%m%d")
+        final_df['limitValidity'] = '0'
+        final_df['discountable_idx'] = 'J'
+        final_df['surchargeable_idx'] = 'J'
+        final_df['amountFrom'] = '1'
+        
+        # Add price column based on pricelist
+        final_df['price'] = 0.0
+        final_df.loc[final_df['pricelist'] == 'Preisstufe 3', 'price'] = final_df['price_3']
+        final_df.loc[final_df['pricelist'] == 'Preisstufe 4', 'price'] = final_df['price_4']
+        final_df.loc[final_df['pricelist'] == 'Preisstufe 5', 'price'] = final_df['price_5']
+        final_df.loc[final_df['pricelist'] == 'Preisstufe 6', 'price'] = final_df['price_6']
+        final_df.loc[final_df['pricelist'] == 'Preisstufe 7', 'price'] = final_df['price_7']
+        
+        # Set price tiers based on pricelist
+        final_df['price[0]'] = final_df['price_3']
+        final_df['price[1]'] = final_df['price_4']
+        final_df['price[2]'] = final_df['price_5']
+        final_df['price[3]'] = final_df['price_6']
+        final_df['price[4]'] = final_df['price_7']
+        
+        # Reorder columns
+        columns = [
+            'aid', 'company', 'price', 'currency', 'unit', 'pricelist', 
+            'valid_from', 'limitValidity', 'amountFrom', 'discountable_idx', 'surchargeable_idx'
+        ]
+        final_df = final_df[columns]
+        
+        # Save to CSV with proper encoding
+        output_file = OUTPUT_DIR / "article_preisstufe_3_7.csv"
+        final_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
+        
+        print(f"Price data exported successfully to: {output_file}")
+        
+        return output_file if output_file.exists() else None
+    except Exception as e:
+        print(f"Error in import_artikel_preisstufe_3_7: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None
+        raise
+ 
 # This allows the script to be run directly
 if __name__ == "__main__":
     import_sku_basis()
@@ -731,3 +968,6 @@ if __name__ == "__main__":
     import_sku_text()
     import_artikel_variant()
     import_sku_variant()
+    import_artikel_pricestaffeln()
+    import_artikel_basicprice()
+    import_artikel_Preisliste_3_7()

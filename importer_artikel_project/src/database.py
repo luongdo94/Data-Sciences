@@ -1,18 +1,11 @@
 import os
 import pyodbc
 import pandas as pd
+from dotenv import load_dotenv
 from .config import CONN_STR, SQL_DIR
 
-def execute_sql_file(filename, params=None):
-    try:
-        with open(SQL_DIR / filename, 'r', encoding='utf-8') as f:
-            query = f.read()
-        
-        with pyodbc.connect(CONN_STR) as conn:
-            return pd.read_sql(query, conn, params=params)
-            
-    except Exception as e:
-        raise Exception(f"Error executing SQL file {filename}: {e}")
+# Load environment variables from .env file
+load_dotenv()
 
 def execute_query(query, params=None):
     """Execute a SQL query and return results as a DataFrame"""
@@ -21,66 +14,6 @@ def execute_query(query, params=None):
             return pd.read_sql(query, conn, params=params)
     except Exception as e:
         raise Exception(f"Error executing query: {e}")
-
-def execute_query_with_aids(query_template, aids):
-    """
-    Execute a query with a potentially large list of AIDs using a temporary table.
-    The query_template should contain {temp_table_name} as a placeholder for the temporary table name.
-    """
-    if not aids:
-        raise ValueError("No AIDs provided")
-    
-    temp_table_name = "TempAIDs"  # MS Access doesn't support # for temp tables
-    
-    try:
-        with pyodbc.connect(CONN_STR) as conn:
-            cursor = conn.cursor()
-            
-            # Drop the table if it exists
-            try:
-                cursor.execute(f"DROP TABLE {temp_table_name}")
-                conn.commit()
-            except:
-                pass
-            
-            # Create a regular table (MS Access doesn't support temp tables with #)
-            cursor.execute(f"CREATE TABLE {temp_table_name} (AID TEXT(50) PRIMARY KEY)")
-            conn.commit()
-            
-            # Insert AIDs in batches to avoid parameter limits
-            batch_size = 100
-            for i in range(0, len(aids), batch_size):
-                batch = aids[i:i + batch_size]
-                # Build a single INSERT statement with multiple VALUES
-                values = ", ".join(["(\"{}\")".format(str(aid).replace('"', '""')) for aid in batch])
-                insert_sql = f"INSERT INTO {temp_table_name} (AID) VALUES {values}"
-                cursor.execute(insert_sql)
-                conn.commit()
-            
-            # Execute the main query with the temporary table
-            query = query_template.format(temp_table_name=temp_table_name)
-            result = pd.read_sql(query, conn)
-            
-            # Clean up - drop the table when done
-            try:
-                cursor.execute(f"DROP TABLE {temp_table_name}")
-                conn.commit()
-            except:
-                pass
-            
-            return result
-            
-    except Exception as e:
-        # Ensure we clean up the table even if there's an error
-        try:
-            with pyodbc.connect(CONN_STR) as conn:
-                cursor = conn.cursor()
-                cursor.execute(f"DROP TABLE {temp_table_name}")
-                conn.commit()
-        except:
-            pass
-        raise Exception(f"Error executing query with AIDs: {e}")
-
 
 def read_csv_file(file_path, encoding='utf-8-sig', delimiter=';', required_columns=None, dtype=None):
     """Read CSV file with error handling."""
@@ -95,7 +28,6 @@ def read_csv_file(file_path, encoding='utf-8-sig', delimiter=';', required_colum
             raise ValueError(f"Missing columns: {', '.join(missing)}")
     
     return df
-
 
 def read_sql_query(sql_file, aids=None):
     """Read and format SQL query with optional AIDs"""
@@ -114,3 +46,49 @@ def read_sql_query(sql_file, aids=None):
         sql_query = sql_query.replace("{aid_placeholders}", ", ".join(formatted_aids))
     
     return sql_query
+
+def get_sql_server_connection():
+    """
+    Create a connection to SQL Server using environment variables.
+    Requires the following environment variables to be set:
+    - SQL_SERVER: Server name/address
+    - SQL_DATABASE: Database name
+    - SQL_USERNAME: SQL Server username
+    - SQL_PASSWORD: SQL Server password
+    
+    Returns:
+        pyodbc.Connection: A connection to the SQL Server database
+    """
+    server = os.getenv('SQL_SERVER')
+    database = os.getenv('SQL_DATABASE')
+    username = os.getenv('SQL_USERNAME')
+    password = os.getenv('SQL_PASSWORD')
+    
+    if not all([server, database, username, password]):
+        raise ValueError("Missing required SQL Server environment variables. Please set SQL_SERVER, SQL_DATABASE, SQL_USERNAME, and SQL_PASSWORD")
+    
+    connection_string = f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={server};DATABASE={database};UID={username};PWD={password}"
+    
+    try:
+        conn = pyodbc.connect(connection_string)
+        return conn
+    except Exception as e:
+        raise Exception(f"Error connecting to SQL Server: {e}")
+
+
+def read_sql_server_query(query, params=None):
+    """
+    Execute a query on SQL Server and return results as a DataFrame
+    
+    Args:
+        query (str): SQL query to execute
+        params (dict, optional): Parameters for the query
+        
+    Returns:
+        pd.DataFrame: Query results
+    """
+    try:
+        with get_sql_server_connection() as conn:
+            return pd.read_sql(query, conn, params=params)
+    except Exception as e:
+        raise Exception(f"Error executing SQL Server query: {e}")

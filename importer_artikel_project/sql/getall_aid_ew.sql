@@ -1,1 +1,1 @@
-Select ArtBasis, ArtikelCode from t_Art_Mega_SKU 
+Select ArtBasis as aid, ArtikelCode as aid1 from t_Art_Mega_SKU 

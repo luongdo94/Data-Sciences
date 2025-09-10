@@ -5,7 +5,8 @@ SELECT
     sku.Hauptfarbe AS Farbgruppe,
     sku.FarbeNeu AS Farbe,
     sku.isColorCombination AS zweifarbig,
-    m.Grammatur AS Grammatur
+    m.Grammatur AS Grammatur,
+    m.Ursprungsland
 FROM
     (
         (t_Art_Mega_SKU sku

@@ -16,7 +16,10 @@ from src.simple_article_importer import (
     import_artikel_text,
     import_sku_text,
     import_sku_variant,
-    import_artikel_variant
+    import_artikel_variant,
+    import_artikel_preisstufe_3_7,
+    import_artikel_basicprice,
+    import_artikel_pricestaffeln,
 )
 from src.sku_color_processor import process_colors
 
@@ -37,6 +40,9 @@ def process_sku_data():
     sku_classification_file = import_sku_classification()
     sku_keyword_file = import_sku_keyword()
     sku_variant_file = import_sku_variant()
+    sku_price_file = import_artikel_preisstufe_3_7()
+    sku_basicprice_file = import_artikel_basicprice()
+    sku_pricestaffeln_file = import_artikel_pricestaffeln()
     sku_text_files = import_sku_text() or []  # List of text files, default to empty list if None
     
     # Skip if any required file is None or doesn't exist
@@ -49,12 +55,18 @@ def process_sku_data():
     final_sku_classification_file = sku_classification_file.with_name("SKU_CLASSIFICATION - Artikel-Merkmale.csv")
     final_sku_keyword_file = sku_keyword_file.with_name("SKU_KEYWORD - Artikel-Schlüsselworte.csv")
     final_sku_variant_file = sku_variant_file.with_name("VARIANT_IMPORT - SKU-Variantenverknüpfung Import.csv")
+    final_sku_price_file = sku_price_file.with_name("SKU_PRICE - Artikel-Preisstufe.csv")
+    final_sku_basicprice_file = sku_basicprice_file.with_name("SKU_BASICPRICE - Artikel-BasisPreis.csv")
+    final_sku_pricestaffeln_file = sku_pricestaffeln_file.with_name("SKU_PRICESTAFFELN - Artikel-Preisstaffeln.csv")
     
     # Process colors for basic files
     process_colors(csv_file_path=sku_basis_file, sku_column='aid')
     process_colors(csv_file_path=sku_classification_file, sku_column='aid')
     process_colors(csv_file_path=sku_keyword_file, sku_column='aid')
-    process_colors(csv_file_path=sku_variant_file, sku_column='aid')
+    process_colors(csv_file_path=sku_variant_file, sku_column='variant_aid')
+    process_colors(csv_file_path=sku_price_file, sku_column='aid')
+    process_colors(csv_file_path=sku_basicprice_file, sku_column='aid')
+    process_colors(csv_file_path=sku_pricestaffeln_file, sku_column='aid')
     
     # Process each text file
     final_sku_text_files = []
@@ -72,7 +84,10 @@ def process_sku_data():
     sku_classification_file.replace(final_sku_classification_file)
     sku_keyword_file.replace(final_sku_keyword_file)
     sku_variant_file.replace(final_sku_variant_file)
-
+    sku_price_file.replace(final_sku_price_file)
+    sku_basicprice_file.replace(final_sku_basicprice_file)
+    sku_pricestaffeln_file.replace(final_sku_pricestaffeln_file)
+    
 def process_article_data():
     from run_comparison_standalone import diff1
     
@@ -111,22 +126,13 @@ def process_article_data():
     
     # Process text files if any
     if artikel_text_files:
-        final_artikel_text_files = []
         for text_file in artikel_text_files:
             if text_file and text_file.exists():
                 file_type = text_file.stem.split('_')[-1]
                 final_name = f"ARTICLE_TEXT-{file_type.upper()}.csv"
                 final_path = text_file.parent / final_name
                 text_file.replace(final_path)
-                final_artikel_text_files.append(final_path)
                 print(f"Created: {final_path}")
-    
-    # Rename basic files
-    artikel_basis_file.replace(final_artikel_basis)
-    artikel_classification_file.replace(final_artikel_classification)
-    artikel_zuordnung_file.replace(final_artikel_zuordnung)
-    artikel_keyword_file.replace(final_artikel_keyword)
-    artikel_variant_file.replace(final_artikel_variant)
 
 def main():
     try:
