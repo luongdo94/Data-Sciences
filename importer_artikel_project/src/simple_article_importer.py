@@ -26,7 +26,7 @@ def extract_numbers(value):
     import re
     numbers = re.findall(r'\d+', str(value))
     return ''.join(numbers) if numbers else ''
-
+"""
 def import_sku_basis():
     try:
         if not diff:
@@ -954,10 +954,56 @@ def import_artikel_preisstufe_3_7():
         traceback.print_exc()
         return None
         raise
- 
+ """
+def import_artikel_EAN():
+    try:
+        if not diff:
+            raise ValueError("No AIDs found")
+        
+        df = pd.DataFrame(execute_query(read_sql_query("get_ean.sql", None)))
+        if df.empty:
+            print("No data returned")
+            return None
+        
+        # Map Verpackungseinheit values
+        df['Verpackungseinheit'] = df['Verpackungseinheit'].astype(str)
+        df['Verpackungseinheit'] = df['Verpackungseinheit'].replace({
+            '1': 'SP',
+            '5': '5er',
+            '10': '10er'
+        })
+        
+        # Add required columns
+        df['aid'] = df['ArtikelCode']
+        df['company'] = 0
+        df['EAN'] = df['EAN'].astype(str)
+        df['numbertype'] = '2'
+        df['valid_from'] = datetime.now().strftime("%Y%m%d")
+        df['unit'] = df['Verpackungseinheit']
+        df['Verwendungszweck'] = '1'
+
+        #Reorder columns
+        columns = [
+            'aid', 'company', 'EAN', 'numbertype', 'valid_from', 'unit', 'Verwendungszweck'
+        ]
+        df = df[columns]
+        
+        # Save to CSV with proper encoding
+        output_file = OUTPUT_DIR / "article_ean.csv"
+        df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
+        
+        print(f"EAN data exported successfully to: {output_file}")
+        
+        return output_file if output_file.exists() else None
+    except Exception as e:
+        print(f"Error in import_artikel_ean: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None
+        raise
 # This allows the script to be run directly
 if __name__ == "__main__":
-    import_sku_basis()
+    """import_sku_basis()
     import_sku_classification()
     import_sku_keyword()
     import_artikel_basis()
@@ -970,4 +1016,5 @@ if __name__ == "__main__":
     import_sku_variant()
     import_artikel_pricestaffeln()
     import_artikel_basicprice()
-    import_artikel_Preisliste_3_7()
+    import_artikel_Preisliste_3_7()"""
+    import_artikel_EAN()
