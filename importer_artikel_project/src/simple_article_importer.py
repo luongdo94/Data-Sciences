@@ -13,7 +13,7 @@ if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
 from src.database import execute_query, read_sql_query
-from run_comparison_standalone import diff, diff1
+from run_comparison_standalone import diff, diff1, diff_EAN
 
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
@@ -26,7 +26,7 @@ def extract_numbers(value):
     import re
     numbers = re.findall(r'\d+', str(value))
     return ''.join(numbers) if numbers else ''
-"""
+
 def import_sku_basis():
     try:
         if not diff:
@@ -780,6 +780,7 @@ def import_artikel_pricestaffeln():
         final_df['surchargeable_idx[0]'] = 'J'
         
         if 'Preisstaffel 2-3' in final_df['pricelist'].values:
+            final_df.loc[final_df['pricelist'] == 'Preisstaffel 2-3', 'price[0]'] = final_df['price_2']
             final_df.loc[final_df['pricelist'] == 'Preisstaffel 2-3', 'price[1]'] = final_df['price_2']
             final_df.loc[final_df['pricelist'] == 'Preisstaffel 2-3', 'price[2]'] = final_df['price_3']
             final_df.loc[final_df['pricelist'] == 'Preisstaffel 1-3', 'price[1]'] = final_df['price_2']
@@ -954,21 +955,46 @@ def import_artikel_preisstufe_3_7():
         traceback.print_exc()
         return None
         raise
- """
-def import_artikel_EAN():
+
+def import_sku_EAN():
     try:
-        if not diff:
-            raise ValueError("No AIDs found")
-        
-        df = pd.DataFrame(execute_query(read_sql_query("get_ean.sql", None)))
-        if df.empty:
-            print("No data returned")
+        if not diff_EAN:
             return None
+            
+        ean_list = [str(ean).strip() for ean in diff_EAN if str(ean).strip().isdigit()]
+        if not ean_list:
+            return None
+
+        with open(Path(__file__).parent.parent / 'sql' / 'get_EAN.sql', 'r', encoding='utf-8') as f:
+            sql_template = f.read()
+
+        batch_size = 100
+        all_dfs = []
         
-        # Map Verpackungseinheit values
+        for i in range(0, len(ean_list), batch_size):
+            batch = ean_list[i:i + batch_size]
+            placeholders = ','.join(['?'] * len(batch))
+            sql_query = sql_template.replace('{aid_placeholders}', placeholders)
+            
+            try:
+                batch_df = pd.DataFrame(execute_query(sql_query, params=tuple(batch)))
+                if not batch_df.empty:
+                    all_dfs.append(batch_df)
+            except Exception as e:
+                continue
+        
+        if not all_dfs:
+            return None
+            
+        df = pd.concat(all_dfs, ignore_index=True)
+        df['QtyId'] = pd.to_numeric(df['QtyId'], errors='coerce').fillna(0).astype(int)
         df['Verpackungseinheit'] = df['Verpackungseinheit'].astype(str)
-        df['Verpackungseinheit'] = df['Verpackungseinheit'].replace({
-            '1': 'SP',
+        df.loc[df['QtyId'] == 1, 'Verpackungseinheit'] = 'Stück'
+        
+        # Then apply other mappings only for QtyId != 1
+        mask = df['QtyId'] != 1
+        df.loc[mask, 'Verpackungseinheit'] = df.loc[mask, 'Verpackungseinheit'].replace({
+            '1': 'Stk',
             '5': '5er',
             '10': '10er'
         })
@@ -976,7 +1002,7 @@ def import_artikel_EAN():
         # Add required columns
         df['aid'] = df['ArtikelCode']
         df['company'] = 0
-        df['EAN'] = df['EAN'].astype(str)
+        df['EAN'] = df['EAN13'].astype(str)  # Changed from 'EAN' to 'EAN13'
         df['numbertype'] = '2'
         df['valid_from'] = datetime.now().strftime("%Y%m%d")
         df['unit'] = df['Verpackungseinheit']
@@ -1003,7 +1029,7 @@ def import_artikel_EAN():
         raise
 # This allows the script to be run directly
 if __name__ == "__main__":
-    """import_sku_basis()
+    import_sku_basis()
     import_sku_classification()
     import_sku_keyword()
     import_artikel_basis()
@@ -1016,5 +1042,5 @@ if __name__ == "__main__":
     import_sku_variant()
     import_artikel_pricestaffeln()
     import_artikel_basicprice()
-    import_artikel_Preisliste_3_7()"""
-    import_artikel_EAN()
+    import_artikel_Preisliste_3_7()
+    import_sku_EAN()

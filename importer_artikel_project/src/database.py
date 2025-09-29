@@ -8,11 +8,27 @@ from .config import CONN_STR, SQL_DIR
 load_dotenv()
 
 def execute_query(query, params=None):
-    """Execute a SQL query and return results as a DataFrame"""
+    """
+    Execute a SQL query and return results as a DataFrame
+    
+    Args:
+        query (str): SQL query string
+        params (tuple/list/dict, optional): Parameters for the query
+        
+    Returns:
+        pd.DataFrame: Query results
+    """
     try:
         with pyodbc.connect(CONN_STR) as conn:
+            # Nếu params là tuple hoặc list, sử dụng params trực tiếp
+            if isinstance(params, (tuple, list)):
+                return pd.read_sql(query, conn, params=params)
+            # Nếu params là dict hoặc None, giữ nguyên cách xử lý cũ
             return pd.read_sql(query, conn, params=params)
     except Exception as e:
+        print(f"Error in query: {query[:200]}...")
+        if params:
+            print(f"Parameters: {params[:5]}... (total: {len(params)} parameters)")
         raise Exception(f"Error executing query: {e}")
 
 def read_csv_file(file_path, encoding='utf-8-sig', delimiter=';', required_columns=None, dtype=None):

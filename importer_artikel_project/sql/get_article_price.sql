@@ -1,1 +1,4 @@
-Select * from t_Art_VK_SKU  
+SELECT sp.* 
+FROM t_Art_VK_SKU sp
+
+

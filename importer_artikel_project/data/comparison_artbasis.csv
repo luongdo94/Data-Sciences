@@ -62,79 +62,79 @@ aid_ew,aid_erp
 311,1046-white-M
 3185,1046-white-S
 3190,1046-white-XL
-3325,1050
-3400,1050-black-4XL
-3407,1050-black-5XL
-349,1050-black-L
-352,1050-black-M
-3520,1050-black-S
-3521,1050-black-XL
-356,1050-black-XXL
-3560,1050-black-XXXL
-3561,1050-fire red-4XL
-3580,1050-fire red-5XL
-3590,1050-fire red-L
-399,1050-fire red-M
-4000,1050-fire red-S
-4001,1050-fire red-XL
-4005,1050-fire red-XXL
-4020,1050-fire red-XXXL
-4025,1050-gold-4XL
-404,1050-gold-5XL
-4040,1050-gold-L
-4081,1050-gold-M
-4085,1050-gold-S
-4095,1050-gold-XL
-4097,1050-gold-XXL
-4099,1050-gold-XXXL
-4100,1050-light grey-4XL
-4120,1050-light grey-5XL
-4150,1050-light grey-L
-4250,1050-light grey-M
-4400,1050-light grey-S
-4405,1050-light grey-XL
-4520,1050-light grey-XXL
-4525,1050-light grey-XXXL
-4590,1050-navy-4XL
-4600,1050-navy-5XL
-4605,1050-navy-L
-4900,1050-navy-M
-4910,1050-navy-S
-4920,1050-navy-XL
-5025,1050-navy-XXL
-5050,1050-navy-XXXL
-5052,1050-royal-4XL
-5077,1050-royal-5XL
-508,1050-royal-L
-5080,1050-royal-M
-5099,1050-royal-S
-518,1050-royal-XL
-5181,1050-royal-XXL
-5182,1050-royal-XXXL
-5270,1050-steel gray-4XL
-5275,1050-steel gray-5XL
-5290,1050-steel gray-L
-5295,1050-steel gray-M
-5300,1050-steel gray-S
-5390,1050-steel gray-XL
-5500,1050-steel gray-XXL
-6099,1050-steel gray-XXXL
-6300,1050-white-4XL
-6305,1050-white-5XL
-6310,1050-white-L
-6315,1050-white-M
-6900,1050-white-S
-6905,1050-white-XL
-6910,1050-white-XXL
-6915,1050-white-XXXL
-7001,1050-wild lime-4XL
-7200,1050-wild lime-5XL
-7205,1050-wild lime-L
-7548,1050-wild lime-M
-7549,1050-wild lime-S
-7621,1050-wild lime-XL
-7622,1050-wild lime-XXL
-7631,1050-wild lime-XXXL
+3325,1050-black-4XL_obsolet
+3400,1050-black-5XL_obsolet
+3407,1050-black-L_obsolet
+349,1050-black-M_obsolet
+352,1050-black-S_obsolet
+3520,1050-black-XL_obsolet
+3521,1050-black-XXL_obsolet
+356,1050-black-XXXL_obsolet
+3560,1050-fire red-4XL_obsolet
+3561,1050-fire red-5XL_obsolet
+3580,1050-fire red-L_obsolet
+3590,1050-fire red-M_obsolet
+399,1050-fire red-S_obsolet
+4000,1050-fire red-XL_obsolet
+4001,1050-fire red-XXL_obsolet
+4005,1050-fire red-XXXL_obsolet
+4020,1050-gold-4XL_obsolet
+4025,1050-gold-5XL_obsolet
+404,1050-gold-L_obsolet
+4040,1050-gold-M_obsolet
+4081,1050-gold-S_obsolet
+4085,1050-gold-XL_obsolet
+4095,1050-gold-XXL_obsolet
+4097,1050-gold-XXXL_obsolet
+4099,1050-light grey-4XL
+4100,1050-light grey-5XL
+4120,1050-light grey-L
+4150,1050-light grey-M
+4250,1050-light grey-S
+4400,1050-light grey-XL
+4405,1050-light grey-XXL
+4520,1050-light grey-XXXL
+4525,1050-navy-4XL_obsolet
+4590,1050-navy-5XL_obsolet
+4600,1050-navy-L_obsolet
+4605,1050-navy-M_obsolet
+4900,1050-navy-S_obsolet
+4910,1050-navy-XL_obsolet
+4920,1050-navy-XXL_obsolet
+5025,1050-navy-XXXL_obsolet
+5050,1050-royal-4XL_obsolet
+5052,1050-royal-5XL_obsolet
+5077,1050-royal-L_obsolet
+508,1050-royal-M_obsolet
+5080,1050-royal-S_obsolet
+5099,1050-royal-XL_obsolet
+518,1050-royal-XXL_obsolet
+5181,1050-royal-XXXL_obsolet
+5182,1050-steel gray-4XL
+5270,1050-steel gray-5XL
+5275,1050-steel gray-L
+5290,1050-steel gray-M
+5295,1050-steel gray-S
+5300,1050-steel gray-XL
+5390,1050-steel gray-XXL
+5500,1050-steel gray-XXXL
+6099,1050-white-4XL_obsolet
+6300,1050-white-5XL_obsolet
+6305,1050-white-L_obsolet
+6310,1050-white-M_obsolet
+6315,1050-white-S_obsolet
+6900,1050-white-XL_obsolet
+6905,1050-white-XXL_obsolet
+6910,1050-white-XXXL_obsolet
+6915,1050-wild lime-4XL_obsolet
+7001,1050-wild lime-5XL_obsolet
+7200,1050-wild lime-L_obsolet
+7205,1050-wild lime-M_obsolet
+7548,1050-wild lime-S_obsolet
+7549,1050-wild lime-XL_obsolet
+7621,1050-wild lime-XXL_obsolet
+7622,1050-wild lime-XXXL_obsolet
+7631,1050_obsolet
 7632,1051
 7634,1051-black-L
 7635,1051-black-M
@@ -4545,79 +4545,10 @@ aid_ew,aid_erp
 ,3580-white-light grey-XS
 ,3580-white-light grey-XXL
 ,3580-white-light grey-XXXL
-,3590
-,3590-black-charcoal-4XL
-,3590-black-charcoal-5XL
-,3590-black-charcoal-L
-,3590-black-charcoal-M
-,3590-black-charcoal-S
-,3590-black-charcoal-XL
-,3590-black-charcoal-XS
-,3590-black-charcoal-XXL
-,3590-black-charcoal-XXXL
-,3590-fire red-charcoal-4XL
-,3590-fire red-charcoal-5XL
-,3590-fire red-charcoal-L
-,3590-fire red-charcoal-M
-,3590-fire red-charcoal-S
-,3590-fire red-charcoal-XL
-,3590-fire red-charcoal-XS
-,3590-fire red-charcoal-XXL
-,3590-fire red-charcoal-XXXL
-,3590-forest-charcoal-4XL
-,3590-forest-charcoal-5XL
+,
 ,3590-forest-charcoal-L
 ,3590-forest-charcoal-M
-,3590-forest-charcoal-S
 ,3590-forest-charcoal-XL
-,3590-forest-charcoal-XS
-,3590-forest-charcoal-XXL
-,3590-forest-charcoal-XXXL
-,3590-navy-charcoal-4XL
-,3590-navy-charcoal-5XL
-,3590-navy-charcoal-L
-,3590-navy-charcoal-M
-,3590-navy-charcoal-S
-,3590-navy-charcoal-XL
-,3590-navy-charcoal-XS
-,3590-navy-charcoal-XXL
-,3590-navy-charcoal-XXXL
-,3590-new light grey-charcoal-4XL
-,3590-new light grey-charcoal-5XL
-,3590-new light grey-charcoal-L
-,3590-new light grey-charcoal-M
-,3590-new light grey-charcoal-S
-,3590-new light grey-charcoal-XL
-,3590-new light grey-charcoal-XS
-,3590-new light grey-charcoal-XXL
-,3590-new light grey-charcoal-XXXL
-,3590-royal-charcoal-4XL
-,3590-royal-charcoal-5XL
-,3590-royal-charcoal-L
-,3590-royal-charcoal-M
-,3590-royal-charcoal-S
-,3590-royal-charcoal-XL
-,3590-royal-charcoal-XS
-,3590-royal-charcoal-XXL
-,3590-royal-charcoal-XXXL
-,3590-steel grey-charcoal-4XL
-,3590-steel grey-charcoal-5XL
-,3590-steel grey-charcoal-L
-,3590-steel grey-charcoal-M
-,3590-steel grey-charcoal-S
-,3590-steel grey-charcoal-XL
-,3590-steel grey-charcoal-XS
-,3590-steel grey-charcoal-XXL
-,3590-steel grey-charcoal-XXXL
-,3590-white-charcoal-4XL
-,3590-white-charcoal-5XL
-,3590-white-charcoal-L
-,3590-white-charcoal-M
-,3590-white-charcoal-S
-,3590-white-charcoal-XL
-,3590-white-charcoal-XS
-,3590-white-charcoal-XXL
-,3590-white-charcoal-XXXL
 ,399
 ,399-baby blue-104
 ,399-baby blue-116
@@ -6295,7 +6226,6 @@ aid_ew,aid_erp
 ,4525-white-indigo-XL
 ,4525-white-indigo-XS
 ,4525-white-indigo-XXL
-,4590
 ,4600
 ,4600-black-4XL
 ,4600-black-5XL
@@ -6365,7 +6295,6 @@ aid_ew,aid_erp
 ,4605-steel gray-XL
 ,4605-steel gray-XS
 ,4605-steel gray-XXL
-,4605-steel gray-XXXL
 ,4605-white-L
 ,4605-white-M
 ,4605-white-S
@@ -6449,7 +6378,6 @@ aid_ew,aid_erp
 ,4910-white-XL
 ,4910-white-XXL
 ,4910-white-XXXL
-,4920
 ,5025
 ,5025-black-L
 ,5025-black-M
@@ -7457,7 +7385,6 @@ aid_ew,aid_erp
 ,5390-turquoise-M
 ,5390-turquoise-S
 ,5390-turquoise-XL
-,5500
 ,6099
 ,6099-ash-L
 ,6099-ash-M
