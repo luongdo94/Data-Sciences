@@ -20,10 +20,8 @@ def execute_query(query, params=None):
     """
     try:
         with pyodbc.connect(CONN_STR) as conn:
-            # Nếu params là tuple hoặc list, sử dụng params trực tiếp
             if isinstance(params, (tuple, list)):
                 return pd.read_sql(query, conn, params=params)
-            # Nếu params là dict hoặc None, giữ nguyên cách xử lý cũ
             return pd.read_sql(query, conn, params=params)
     except Exception as e:
         print(f"Error in query: {query[:200]}...")

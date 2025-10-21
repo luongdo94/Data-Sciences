@@ -21,6 +21,7 @@ from src.simple_article_importer import (
     import_artikel_basicprice,
     import_artikel_pricestaffeln,
     import_sku_EAN,
+    import_sku_gebinde,
 )
 from src.sku_color_processor import process_colors
 
@@ -42,10 +43,15 @@ def process_sku_data():
     sku_keyword_file = import_sku_keyword()
     sku_variant_file = import_sku_variant()
     sku_price_file = import_artikel_preisstufe_3_7()
-    sku_basicprice_file = import_artikel_basicprice()
+    # Call with custom filenames
+    sku_basicprice_file = import_artikel_basicprice(
+        basicprice_filename="custom_basicprice.csv",
+        validity_filename="custom_validity_dates.csv"
+    )
     sku_pricestaffeln_file = import_artikel_pricestaffeln()
     sku_text_files = import_sku_text() or []  # List of text files, default to empty list if None
     sku_EAN_file = import_sku_EAN()
+    sku_gebinde_file = import_sku_gebinde()
     
     # Skip if any required file is None or doesn't exist
     if not all(f and f.exists() for f in [sku_basis_file, sku_classification_file, sku_keyword_file, sku_variant_file]):
@@ -59,8 +65,10 @@ def process_sku_data():
     final_sku_variant_file = sku_variant_file.with_name("VARIANT_IMPORT - SKU-Variantenverknüpfung Import.csv")
     final_sku_price_file = sku_price_file.with_name("SKU_PRICE - Artikel-Preisstufe.csv")
     final_sku_basicprice_file = sku_basicprice_file.with_name("SKU_BASICPRICE - Artikel-BasisPreis.csv")
+    final_sku_validity_file = Path(str(sku_basicprice_file).replace("custom_basicprice.csv", "custom_validity_dates.csv")).with_name("SKU_BASICPRICE - Artikel-Preis_Gültigkeit.csv")
     final_sku_pricestaffeln_file = sku_pricestaffeln_file.with_name("SKU_PRICESTAFFELN - Artikel-Preisstaffeln.csv")
     final_sku_EAN_file = sku_EAN_file.with_name("SKU_EAN - Artikel-EAN.csv")
+    final_sku_gebinde_file = sku_gebinde_file.with_name("ARTICLE_PACKAGING_IMPORT - SKU-Gebindedaten.csv")
     
     # Process colors for basic files
     process_colors(csv_file_path=sku_basis_file, sku_column='aid')
@@ -69,8 +77,13 @@ def process_sku_data():
     process_colors(csv_file_path=sku_variant_file, sku_column='variant_aid')
     process_colors(csv_file_path=sku_price_file, sku_column='aid')
     process_colors(csv_file_path=sku_basicprice_file, sku_column='aid')
+    # Process the validity file
+    validity_file = sku_basicprice_file.parent / "custom_validity_dates.csv"
+    if validity_file.exists():
+        process_colors(csv_file_path=validity_file, sku_column='aid')
     process_colors(csv_file_path=sku_pricestaffeln_file, sku_column='aid')
     process_colors(csv_file_path=sku_EAN_file, sku_column='aid')
+    process_colors(csv_file_path=sku_gebinde_file, sku_column='aid')
     
     # Process each text file
     final_sku_text_files = []
@@ -85,6 +98,9 @@ def process_sku_data():
     
     # Rename basic files
     sku_basis_file.replace(final_sku_file)
+    # Rename the validity file if it exists
+    if validity_file.exists():
+        validity_file.replace(final_sku_validity_file)
     sku_classification_file.replace(final_sku_classification_file)
     sku_keyword_file.replace(final_sku_keyword_file)
     sku_variant_file.replace(final_sku_variant_file)
@@ -92,6 +108,7 @@ def process_sku_data():
     sku_basicprice_file.replace(final_sku_basicprice_file)
     sku_pricestaffeln_file.replace(final_sku_pricestaffeln_file)
     sku_EAN_file.replace(final_sku_EAN_file)
+    sku_gebinde_file.replace(final_sku_gebinde_file)
     
 def process_article_data():
     from run_comparison_standalone import diff1
