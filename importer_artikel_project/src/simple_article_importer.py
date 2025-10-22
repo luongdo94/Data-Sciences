@@ -124,8 +124,10 @@ def import_sku_classification():
             ('Colour_Farbe', df['Farbe']),
             ('Colour_Farbgruppe', df['Farbgruppe']),
             ('Colour_Farbsortierung', df['Sort'].fillna('')),
-            ('Size_GrÃ¶ÃŸe', df['GrÃ¶ÃŸe']),
-            ('Size_GrÃ¶ÃŸenspiegel', df['GrÃ¶ÃŸenspiegel']),
+            # Handle encoding for 'Größe' column - check both possible encodings
+            ('Size_Größe', df.get('Größe', df.get('GrÃ¶ÃŸe', pd.Series('')))),
+            ('Size_Größe', df.get('Größe', df.get('GrÃ¶ÃŸe', pd.Series('')))),
+            ('Size_Größenspiegel', df.get('Größenspiegel', df.get('GrÃ¶ÃŸenspiegel', pd.Series('')))),
             ('Colour_zweifarbig', df['zweifarbig']),
             ('Ursprungsland', df['Ursprungsland'].str[:2]),
             ('Fabric_Melange', df['ColorMelange']),
@@ -170,7 +172,9 @@ def import_sku_keyword():
         raise
 def import_artikel_basis():
     try:
-        if not diff:
+        from run_comparison_standalone import diff1
+        
+        if not diff1:
             raise ValueError("No AIDs found")
         
         # Debug: Print the SQL query
@@ -703,8 +707,11 @@ def import_sku_variant():
             return None
         
         # Define attributes mapping with proper values
+        # Handle encoding for 'Größe' column - check both possible encodings
+        groesse_col = 'Größe' if 'Größe' in df.columns else 'GrÃ¶ÃŸe'
+        
         attributes = [
-            ('Size_GrÃ¶ÃŸe', df['GrÃ¶ÃŸe']),
+            ('Size_Größe', df[groesse_col]),
             ('Colour_Farbe', df['Farbe']),
             ('Ursprungsland', df['Ursprungsland'].str[:2])
         ]
@@ -740,7 +747,7 @@ def import_sku_variant():
 
         
         # Save to CSV with proper encoding
-        output_file = OUTPUT_DIR / "VARIANT_IMPORT - SKU-VariantenverknÃ¼pfung Import.csv"
+        output_file = OUTPUT_DIR / "VARIANT_IMPORT - SKU-Variantenverknüpfung Import.csv"
         result_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
         
         print(f"Variant data exported successfully to: {output_file}")
@@ -856,7 +863,7 @@ def import_artikel_pricestaffeln():
         final_df = final_df[columns]
 
         # Save to CSV with proper encoding
-        output_file = OUTPUT_DIR / "article_price.csv"
+        output_file = OUTPUT_DIR / "PRICELIST- Artikel-Preisstafeln.csv"
         final_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
 
         print(f"Price data exported successfully to: {output_file}")
@@ -1015,7 +1022,7 @@ def import_artikel_pricestaffeln():
             merged_df['valid_to'] = now.strftime('%Y%m%d')
             
             # Export merged dataframe to CSV
-            merged_output_file = OUTPUT_DIR / "article_price_validity.csv"
+            merged_output_file = OUTPUT_DIR / "PRICELIST_pricestaffeln_validity.csv"
             merged_df.to_csv(merged_output_file, index=False, encoding='utf-8-sig', sep=';')
             print(f"Price data with validity exported successfully to: {merged_output_file}")
 
@@ -1110,7 +1117,7 @@ def import_artikel_preisstufe_3_7():
         final_df = final_df[columns]
         
         # Save to CSV with proper encoding
-        output_file = OUTPUT_DIR / "article_preisstufe_3_7.csv"
+        output_file = OUTPUT_DIR / "PRICELIST- Artikel-Preisstufe_3_7.csv"
         final_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
         
         print(f"Price data exported successfully to: {output_file}")
@@ -1251,6 +1258,51 @@ def import_artikel_preisstufe_3_7():
             min_dates = min_dates.rename(columns={'valid_from_new': 'min_date'})
             max_dates = max_dates.rename(columns={'valid_from_new': 'max_date'})
             
+            # Get unique prices for each AID and sort them in ascending order
+            price_mapping = validity_df[['aid', 'price_new']].copy()
+            price_mapping['price_new'] = pd.to_numeric(price_mapping['price_new'], errors='coerce')
+            price_mapping = price_mapping.dropna(subset=['price_new'])
+            
+            # For each AID, get all available prices and sort them in ascending order
+            aid_prices = price_mapping.groupby('aid')['price_new'].apply(lambda x: sorted(list(set(x))))  # Sort in ascending order
+            
+            # Assign prices to pricelists for each AID
+            def assign_prices(group):
+                aid = group['aid'].iloc[0]
+                if aid in aid_prices:
+                    prices = aid_prices[aid]
+                    # Create a mapping of pricelist to price index
+                    pricelist_order = [
+                        'Preisstufe 7',  # Gets the first (lowest) price
+                        'Preisstufe 6',
+                        'Preisstufe 5',
+                        'Preisstufe 4',
+                        'Preisstufe 3'   # Gets the last (highest) price if enough prices exist
+                    ]
+                    
+                    # Create price dictionary
+                    price_dict = {}
+                    for i, pricelist in enumerate(pricelist_order):
+                        if i < len(prices):
+                            price_dict[pricelist] = prices[i]
+                        elif prices:  # If we run out of prices, use the last available price
+                            price_dict[pricelist] = prices[-1]
+                        else:
+                            price_dict[pricelist] = None
+                    
+                    # Apply prices to each pricelist
+                    for pricelist, price in price_dict.items():
+                        mask = (group['pricelist'] == pricelist)
+                        group.loc[mask, 'price_new'] = price
+                        
+                return group
+            
+            # Apply price assignment for each AID
+            merged_df = merged_df.groupby('aid', group_keys=False).apply(assign_prices)
+            
+            # Update price column with the new prices
+            merged_df['price'] = merged_df['price_new'].astype(str).str.replace('\.', ',', regex=True)
+            
             # Merge with the main dataframe
             merged_df = pd.merge(merged_df, min_dates, on='aid', how='left')
             merged_df = pd.merge(merged_df, max_dates, on='aid', how='left')
@@ -1318,7 +1370,7 @@ def import_artikel_preisstufe_3_7():
         merged_df = merged_df[[col for col in columns if col in merged_df.columns]]
         
         # Export merged dataframe to CSV
-        merged_output_file = OUTPUT_DIR / "article_price_validity_3_7.csv"
+        merged_output_file = OUTPUT_DIR / "PRICELIST - Preisstufe_validity.csv"
         merged_df.to_csv(merged_output_file, index=False, encoding='utf-8-sig', sep=';')
         print(f"\nMerged data sample:")
         print(merged_df.head())
@@ -1332,6 +1384,202 @@ def import_artikel_preisstufe_3_7():
         traceback.print_exc()
         return None
         raise
+def import_artikel_basicprice(basicprice_filename="PRICELIST - Artikel-Basispreis.csv", validity_filename="Basispreis_validity_data.csv"):
+    """Import and process basic price information for articles.
+    
+    Args:
+        basicprice_filename: Output filename for basic price data
+        validity_filename: Input filename for validity dates (if any)
+        
+    Returns:
+        Path: Path object to the generated CSV file, or None if an error occurred
+    """
+    try:
+        sql_file = Path(__file__).parent.parent / 'sql' / 'get_article_price.sql'
+        if not sql_file.exists():
+            print(f"Error: SQL file not found at {sql_file}")
+            return None
+            
+        with open(sql_file, 'r', encoding='utf-8') as f:
+            sql_query = f.read().strip()
+            
+        if not sql_query:
+            print("Error: SQL query is empty")
+            return None
+        
+        result = execute_query(sql_query)
+        if result is None:
+            print("Error: No data returned from database")
+            return None
+            
+        df = pd.DataFrame(result)
+        if df.empty:
+            print("Warning: No data returned from the query")
+            return None
+            
+        price_column = 'Preis' if 'Preis' in df.columns else None
+        if price_column is None:
+            print("Error: Could not find price column in the result")
+            return None
+            
+        # Process the data
+        df['company'] = '1'
+        df[price_column] = df[price_column].astype(str).str.replace('.', ',')
+        
+        # Initialize basicPrice as empty string
+        df['basicPrice'] = ''
+        
+        # Set basicPrice only for rows where Staffel is 1
+        if 'Staffel' in df.columns:
+            df.loc[df['Staffel'] == 1, 'basicPrice'] = df.loc[df['Staffel'] == 1, price_column]
+        
+        df['currency'] = 'EUR'
+        df['valid_from'] = datetime.now().strftime("%Y%m%d")
+        df['limitValidity'] = '0'
+        df['discountable'] = 'J'
+        df['surchargeable'] = 'J'
+        
+        id_column = 'ArtikelCode'
+        if id_column not in df.columns:
+            print("Error: Could not find 'ArtikelCode' column")
+            return None
+            
+        df['aid'] = df[id_column].astype(str).str.strip()
+        
+        # Remove duplicate AIDs by keeping the first occurrence
+        df = df.drop_duplicates(subset=['aid'], keep='first')
+        
+        output_columns = ['aid', 'company', 'basicPrice', 'currency', 'valid_from', 'limitValidity', 'discountable', 'surchargeable']
+        final_df = df[output_columns].copy()
+        
+        output_file = OUTPUT_DIR / basicprice_filename
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        final_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
+        print(f"✅ Exported {len(final_df)} price records to: {output_file}")
+
+        # Process and export validity data
+        valid_path = Path("C:/Users/gia.luongdo/Python/importer_artikel_project/data/Price_ERP.csv")
+        if not valid_path.exists():
+            print(f"Warning: Validity file not found at {valid_path}")
+            return output_file if output_file.exists() else None
+            
+        try:
+            # Read and process validity data
+            validity_df = pd.read_csv(valid_path, sep=';', header=0, dtype=str)
+            
+            # Normalize column names (strip whitespace and convert to lowercase)
+            validity_df.columns = [col.strip().lower() for col in validity_df.columns]
+            
+            # Check for required columns
+            if 'aid' not in validity_df.columns or 'valid_from' not in validity_df.columns:
+                print("Warning: Required columns not found in validity file")
+                return output_file
+                
+            # Clean up AID values (remove _obsolet suffix if present)
+            validity_df['aid'] = validity_df['aid'].astype(str).str.replace('_obsolet', '').str.strip()
+            
+            # Convert price to numeric for comparison
+            if 'price' in validity_df.columns:
+                validity_df['price'] = pd.to_numeric(validity_df['price'].astype(str).str.replace(',', '.'), errors='coerce')
+            
+            # Convert min_amount to numeric for comparison
+            if 'min_amount' in validity_df.columns:
+                validity_df['min_amount'] = pd.to_numeric(validity_df['min_amount'].astype(str).str.replace(',', '.'), errors='coerce')
+            
+            # Filter rows where min_amount = 1
+            if 'min_amount' in validity_df.columns:
+                validity_df = validity_df[validity_df['min_amount'] == 1]
+            
+            # For each AID, keep only the row with the highest price
+            if 'price' in validity_df.columns and not validity_df.empty:
+                validity_df = validity_df.loc[validity_df.groupby('aid')['price'].idxmax()].copy()
+            
+            # Select and rename columns to match target format
+            validity_columns = {
+                'aid': 'aid',
+                'valid_from': 'valid_from',
+                'price': 'price',
+                'min_amount': 'min_amount'
+            }
+            
+            # Only keep columns that exist in the source data
+            validity_columns = {k: v for k, v in validity_columns.items() if k in validity_df.columns}
+            validity_df = validity_df[list(validity_columns.keys())].rename(columns=validity_columns)
+            
+            # Add _new suffix to all columns from validity_df except 'aid'
+            validity_df_renamed = validity_df.rename(columns={col: f"{col}_new" for col in validity_df.columns if col != 'aid'})
+            
+            # Merge with final_df on 'aid' and store in merged_df
+            merged_df = pd.merge(
+                final_df,
+                validity_df_renamed,
+                on='aid',
+                how='left'
+            )
+            
+            # Update merged_df with the requested changes
+            if 'valid_from_new' in merged_df.columns:
+                # Format valid_from_new as YYYYMMDD and replace valid_from
+                merged_df['valid_from'] = pd.to_datetime(merged_df['valid_from_new']).dt.strftime('%Y%m%d')
+            
+            # Remove min_amount_new column if it exists
+            if 'min_amount_new' in merged_df.columns:
+                merged_df = merged_df.drop(columns=['min_amount_new'])
+            
+            # Update basicPrice with price_new if it exists and then remove the price_new column
+            if 'price_new' in merged_df.columns:
+                merged_df['basicPrice'] = merged_df['price_new'].fillna('')
+                merged_df = merged_df.drop(columns=['price_new'])
+            
+            # Remove valid_from_new column if it exists
+            if 'valid_from_new' in merged_df.columns:
+                merged_df = merged_df.drop(columns=['valid_from_new'])
+            
+            # Add valid_to column with today's date in YYYYMMDD format
+            merged_df['valid_to'] = datetime.now().strftime('%Y%m%d')
+            
+            # Save the updated merged_df
+            merged_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
+            print(f"✅ Updated basic price data with validity information: {output_file}")
+            
+            # Export the merged data for reference
+            merged_output = OUTPUT_DIR / 'PRICELIST - Basicprice_validity.csv'
+            merged_df.to_csv(merged_output, index=False, encoding='utf-8-sig', sep=';')
+            print(f"✅ Exported merged data to: {merged_output}")
+            
+        except Exception as e:
+            print(f"Error processing validity data: {e}")
+            import traceback
+            traceback.print_exc()
+        
+        # Process and export Price_Basic_ERP.csv to Price_Basic.csv
+        try:
+            price_basic_file = r"C:\Users\gia.luongdo\Python\importer_artikel_project\data\Price_Basic_ERP.csv"
+            price_basic_df = pd.read_csv(price_basic_file, encoding='utf-8-sig', sep=';').rename(columns=lambda x: x.lower() if x != x.lower() else x)
+            price_basic_df['valid_to'] = datetime.now().strftime("%Y%m%d")
+            price_basic_df['valid_from'] = datetime.now().strftime("%Y%m%d")
+            price_basic_df['currency'] = 'EUR'
+            price_basic_df['limitValidity'] = '0'
+            price_basic_df['discountable'] = 'J'
+            price_basic_df['surchargeable'] = 'J'
+
+            output_path = r"C:\Users\gia.luongdo\Python\importer_artikel_project\data\Price_Basic_validity.csv"
+            price_basic_df.to_csv(output_path, index=False, encoding='utf-8-sig', sep=';')
+            print(f"✅ Exported Price_Basic.csv to: {output_path}")
+            
+        except Exception as e:
+            print(f"Warning: Could not process Price_Basic_ERP.csv - {str(e)}")
+        
+        return str(output_file)
+        
+
+
+
+    except Exception as e:
+        print(f"Error in import_artikel_basicprice: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
 
 def import_sku_EAN():
     try:
@@ -1680,7 +1928,8 @@ if __name__ == "__main__":
     import_order()
     import_order_pos()
     import_order_classification()"""
-    import_artikel_preisstufe_3_7()
+    import_artikel_basicprice()
+
     
 
    

@@ -38,78 +38,168 @@ def process_sku_data():
         
     print(f"\nProcessing SKU data for {len(diff)} AIDs...")
     
+    # Process core SKU data
+    print("\n=== Processing Core SKU Data ===")
     sku_basis_file = import_sku_basis()
     sku_classification_file = import_sku_classification()
     sku_keyword_file = import_sku_keyword()
     sku_variant_file = import_sku_variant()
-    sku_price_file = import_artikel_preisstufe_3_7()
-    # Call with custom filenames
-    sku_basicprice_file = import_artikel_basicprice(
-        basicprice_filename="custom_basicprice.csv",
-        validity_filename="custom_validity_dates.csv"
-    )
-    sku_pricestaffeln_file = import_artikel_pricestaffeln()
+    
+    # Process price data
+    print("\n=== Processing Price Data ===")
+    try:
+        # 1. Process Basic Price
+        sku_basicprice_file = import_artikel_basicprice(
+            basicprice_filename="PRICELIST - Artikel-Basispreis.csv",
+            validity_filename="Basispreis_validity_data.csv"
+        )
+        # 2. Process Price Staffeln
+        sku_pricestaffeln_file = import_artikel_pricestaffeln()
+        # 3. Process Preisstufe 3-7
+        sku_price_file = import_artikel_preisstufe_3_7()
+        
+    except Exception as e:
+        print(f"Error processing price data: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    # Process additional SKU data
+    print("\n=== Processing Additional SKU Data ===")
     sku_text_files = import_sku_text() or []  # List of text files, default to empty list if None
     sku_EAN_file = import_sku_EAN()
     sku_gebinde_file = import_sku_gebinde()
     
-    # Skip if any required file is None or doesn't exist
-    if not all(f and f.exists() for f in [sku_basis_file, sku_classification_file, sku_keyword_file, sku_variant_file]):
-        print("Warning: Not all SKU data files were generated. Some files may be missing.")
-        return
+    # Check required files
+    required_files = [
+        (sku_basis_file, "SKU - Artikel(Neuanlage).csv"),
+        (sku_classification_file, "SKU_CLASSIFICATION - Artikel-Merkmale.csv"),
+        (sku_keyword_file, "SKU_KEYWORD - Artikel-Schlüsselworte.csv"),
+        (sku_variant_file, "VARIANT_IMPORT - SKU-Variantenverknüpfung Import.csv")
+    ]
     
-    # Rename basic files
-    final_sku_file = sku_basis_file.with_name("SKU - Artikel(Neuanlage).csv")
-    final_sku_classification_file = sku_classification_file.with_name("SKU_CLASSIFICATION - Artikel-Merkmale.csv")
-    final_sku_keyword_file = sku_keyword_file.with_name("SKU_KEYWORD - Artikel-Schlüsselworte.csv")
-    final_sku_variant_file = sku_variant_file.with_name("VARIANT_IMPORT - SKU-Variantenverknüpfung Import.csv")
-    final_sku_price_file = sku_price_file.with_name("SKU_PRICE - Artikel-Preisstufe.csv")
-    final_sku_basicprice_file = sku_basicprice_file.with_name("SKU_BASICPRICE - Artikel-BasisPreis.csv")
-    final_sku_validity_file = Path(str(sku_basicprice_file).replace("custom_basicprice.csv", "custom_validity_dates.csv")).with_name("SKU_BASICPRICE - Artikel-Preis_Gültigkeit.csv")
-    final_sku_pricestaffeln_file = sku_pricestaffeln_file.with_name("SKU_PRICESTAFFELN - Artikel-Preisstaffeln.csv")
-    final_sku_EAN_file = sku_EAN_file.with_name("SKU_EAN - Artikel-EAN.csv")
-    final_sku_gebinde_file = sku_gebinde_file.with_name("ARTICLE_PACKAGING_IMPORT - SKU-Gebindedaten.csv")
+    # Check if all required files exist
+    missing_files = [name for f, name in required_files if f is None or not Path(str(f)).exists()]
+    if missing_files:
+        print("\nWarning: Some required files are missing:")
+        for name in missing_files:
+            print(f"  - {name}")
+        print("\nDebug - Files status:")
+        for f, name in required_files:
+            exists = f is not None and Path(str(f)).exists()
+            print(f"  {name}: {'✅ Exists' if exists else '❌ Missing'} ({f})")
     
-    # Process colors for basic files
-    process_colors(csv_file_path=sku_basis_file, sku_column='aid')
-    process_colors(csv_file_path=sku_classification_file, sku_column='aid')
-    process_colors(csv_file_path=sku_keyword_file, sku_column='aid')
-    process_colors(csv_file_path=sku_variant_file, sku_column='variant_aid')
-    process_colors(csv_file_path=sku_price_file, sku_column='aid')
-    process_colors(csv_file_path=sku_basicprice_file, sku_column='aid')
-    # Process the validity file
-    validity_file = sku_basicprice_file.parent / "custom_validity_dates.csv"
-    if validity_file.exists():
-        process_colors(csv_file_path=validity_file, sku_column='aid')
-    process_colors(csv_file_path=sku_pricestaffeln_file, sku_column='aid')
-    process_colors(csv_file_path=sku_EAN_file, sku_column='aid')
-    process_colors(csv_file_path=sku_gebinde_file, sku_column='aid')
+    # Ensure all file paths are Path objects and handle potential None returns
+    def ensure_path(path, default_name):
+        if path is None:
+            return None
+        path = Path(str(path))  # Convert to Path if it's a string
+        return path.parent / default_name
     
-    # Process each text file
-    final_sku_text_files = []
+    # Define all output files with their final names
+    output_files = [
+        (sku_basis_file, "SKU - Artikel(Neuanlage).csv"),
+        (sku_classification_file, "SKU_CLASSIFICATION - Artikel-Merkmale.csv"),
+        (sku_keyword_file, "SKU_KEYWORD - Artikel-Schlüsselworte.csv"),
+        (sku_variant_file, "VARIANT_IMPORT - SKU-Variantenverknüpfung Import.csv"),
+        (sku_price_file, "PRICELIST - Artikel-Preisstufe_3_7.csv"),
+        (sku_basicprice_file, "PRICELIST - Artikel-Basispreis.csv"),
+        (sku_pricestaffeln_file, "PRICELIST - Artikel-Preisstafeln.csv"),
+        (sku_EAN_file, "SKU_EAN - Artikel-EAN.csv"),
+        (sku_gebinde_file, "ARTICLE_PACKAGING_IMPORT - SKU-Gebindedaten.csv")
+    ]
+    
+    # Handle the validity file path
+    if sku_basicprice_file is not None:
+        validity_path = Path(str(sku_basicprice_file).replace("PRICELIST - Artikel-Basispreis.csv", "Basispreis_validity_data.csv"))
+        final_sku_validity_file = (validity_path.parent / "PRICELIST - Basispreis_validity.csv", "PRICELIST - Basispreis_validity.csv")
+        output_files.append(final_sku_validity_file)
+    
+    # Process and rename all files
+    final_files = []
+    for file_info in output_files:
+        if len(file_info) == 2:
+            file_path, final_name = file_info
+            if file_path is not None and Path(str(file_path)).exists():
+                final_path = ensure_path(file_path, final_name)
+                final_files.append((file_path, final_path, final_name))
+    
+    # Helper function to safely process colors for a file
+    def safe_process_colors(file_path, sku_column):
+        if file_path is None:
+            return
+        path = Path(str(file_path))  # Convert to Path if it's a string
+        if path.exists():
+            try:
+                process_colors(csv_file_path=path, sku_column=sku_column)
+            except Exception as e:
+                print(f"Warning: Error processing colors for {path}: {e}")
+    
+    # Process colors for all generated files
+    print("\n=== Processing Colors ===")
+    for _, final_path, _ in final_files:
+        safe_process_colors(final_path, 'aid')
+    
+    # Process text files
+    text_file_columns = {
+        'webshoptext': 'ARTICLE_TEXT - Webshoptext',
+        'artikeltext': 'ARTICLE_TEXT - Artikeltext',
+        'katalogtext': 'ARTICLE_TEXT - Katalogtext',
+        'vertriebstext': 'ARTICLE_TEXT - Vertriebstext',
+        'rechnungstext': 'ARTICLE_TEXT - Rechnungstext',
+        'pflegehinweise': 'ARTICLE_TEXT - Pflegehinweise'
+    }
+    
     for text_file in sku_text_files:
-        if text_file and text_file.exists():
-            process_colors(csv_file_path=text_file, sku_column='aid')
-            file_type = text_file.stem.split('_')[-1]
-            final_name = f"SKU_TEXT-{file_type.upper()}.csv"
-            final_path = text_file.parent / final_name
-            text_file.replace(final_path)
-            final_sku_text_files.append(final_path)
+        if text_file:
+            try:
+                path = Path(str(text_file))  # Convert to Path if it's a string
+                if path.exists():
+                    # Get the base filename without extension to determine the type
+                    file_stem = path.stem.lower()
+                    for key, column in text_file_columns.items():
+                        if key in file_stem:
+                            safe_process_colors(path, column)
+                            break
+            except Exception as e:
+                print(f"Warning: Error processing text file {text_file}: {e}")
     
-    # Rename basic files
-    sku_basis_file.replace(final_sku_file)
-    # Rename the validity file if it exists
-    if validity_file.exists():
-        validity_file.replace(final_sku_validity_file)
-    sku_classification_file.replace(final_sku_classification_file)
-    sku_keyword_file.replace(final_sku_keyword_file)
-    sku_variant_file.replace(final_sku_variant_file)
-    sku_price_file.replace(final_sku_price_file)
-    sku_basicprice_file.replace(final_sku_basicprice_file)
-    sku_pricestaffeln_file.replace(final_sku_pricestaffeln_file)
-    sku_EAN_file.replace(final_sku_EAN_file)
-    sku_gebinde_file.replace(final_sku_gebinde_file)
+    # Helper function to safely rename a file
+    def safe_rename(src, dst):
+        if src is None or dst is None:
+            return
+        try:
+            src_path = Path(str(src))  # Convert to Path if it's a string
+            dst_path = Path(str(dst))  # Convert to Path if it's a string
+            
+            if not src_path.exists():
+                print(f"Warning: Source file does not exist: {src_path}")
+                return
+                
+            # Ensure destination directory exists
+            dst_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Remove destination file if it exists
+            if dst_path.exists():
+                dst_path.unlink()
+                
+            # Rename the file
+            src_path.rename(dst_path)
+            print(f"Renamed {src_path} to {dst_path}")
+        except Exception as e:
+            print(f"Error renaming {src} to {dst}: {e}")
     
+    # Rename all files to their final names
+    print("\n=== Renaming Output Files ===")
+    for src_path, final_path, final_name in final_files:
+        try:
+            if src_path is not None and Path(str(src_path)).exists():
+                src_path = Path(str(src_path))
+                if src_path != final_path:
+                    src_path.replace(final_path)
+                print(f"✓ {final_name}")
+        except Exception as e:
+            print(f"✗ Error renaming {src_path} to {final_path}: {e}")
+
 def process_article_data():
     from run_comparison_standalone import diff1
     
