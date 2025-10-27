@@ -28,6 +28,65 @@ def extract_numbers(value):
     numbers = re.findall(r'\d+', str(value))
     return ''.join(numbers) if numbers else ''
 
+def update_sku():
+    try:
+        if not diff:
+            raise ValueError("No AIDs found")
+        
+        df = pd.DataFrame(execute_query(read_sql_query("getall_aid_ew.sql", diff)))
+        if df.empty:
+            print("No data returned")
+            return None
+
+        # Map aid1 to aid if it exists
+        if 'aid1' in df.columns:
+            df['aid'] = df['aid1'].astype(str)
+        
+        # Add required columns similar to import_sku_basis
+        df['company'] = 1
+        df['automatic_batch_numbering_pattern'] = '{No,000000000}'
+        df['batch_management'] = 2
+        df['batch_number_range'] = 'Chargen'
+        df['batch_numbering_type'] = 3
+        df['date_requirement'] = 1
+        df['discountable'] = 'ja'
+        df['factory'] = 'Düsseldorf'
+        df['isPi'] = df['isSl'] = df['isSt'] = 'ja'
+        df['isShopArticle'] = df['isVerifiedArticle'] = df['isCatalogArticle'] = 'ja'
+        df['unitPi'] = df['unitSl'] = df['unitSt'] = 'Stk'
+        df['replacement_time'] = 1
+        df['taxPi'] = df['taxSl'] = 'Waren'
+        df['valid_from'] = datetime.now().strftime("%Y%m%d")
+        df['valid_to'] = datetime.now().strftime("%Y%m%d")
+        #df['country_of_origin'] = df['Ursprungsland'].str[:2] if 'Ursprungsland' in df else ''
+        
+        
+        # Define columns for the update file
+        columns = [
+            'aid', 'company', 'automatic_batch_numbering_pattern',
+            'batch_management', 'batch_number_range', 'batch_numbering_type', 'date_requirement',
+            'discountable', 'factory', 'isPi', 'isShopArticle', 'isSl', 'isSt', 'isVerifiedArticle',
+            'isCatalogArticle', 'unitPi', 'unitSl', 'unitSt', 'name', 'replacement_time',
+            'taxPi', 'taxSl', 'valid_from', 'valid_to',
+        ]
+        
+        # Only include columns that exist in the dataframe
+        output_columns = [col for col in columns if col in df.columns]
+        
+        output_file = OUTPUT_DIR / "sku_update.csv"
+        df[output_columns].to_csv(
+            output_file, index=False, encoding='utf-8-sig', sep=';'
+        )
+        
+        print(f"SKU update file created with {len(df)} records")
+        return output_file if output_file.exists() else None
+            
+    except Exception as e:
+        print(f"Error in update_sku: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
 def import_sku_basis():
     try:
         if not diff:
@@ -46,14 +105,14 @@ def import_sku_basis():
         df['batch_numbering_type'] = 3
         df['date_requirement'] = 1
         df['discountable'] = 'ja'
-        df['factory'] = 'DÃ¼sseldorf'
+        df['factory'] = 'Düsseldorf'
         df['isPi'] = df['isSl'] = df['isSt'] = 'ja'
         df['isShopArticle'] = df['isVerifiedArticle'] = df['isCatalogArticle'] = 'ja'
         df['unitPi'] = df['unitSl'] = df['unitSt'] = 'Stk'
         df['replacement_time'] = 1
         df['taxPi'] = df['taxSl'] = 'Waren'
         df['valid_from'] = datetime.now().strftime("%Y%m%d")
-        df['country_of_origin'] = df['Ursprungsland'].str[:2] if 'Ursprungsland' in df else ''
+        #df['country_of_origin'] = df['Ursprungsland'].str[:2] if 'Ursprungsland' in df else ''
 
         columns = ['aid', 'company', 'country_of_origin', 'automatic_batch_numbering_pattern',
                  'batch_management', 'batch_number_range', 'batch_numbering_type', 'date_requirement',
@@ -521,35 +580,10 @@ def import_sku_text():
         # Replace NaN values with empty string and strip whitespace
         df = df.fillna('').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
         
-        # Define text to image mapping for Pflegekennzeichnung
-        def replace_with_images(text):
-            if not isinstance(text, str):
-                return text
-                
-            # Replace text with corresponding image HTML tags
-            # Check if image file exists
-            image_path = r"C:/Users/gia.luongdo/Python/importer_artikel_project/data/image/Screenshot 2025-10-08 123245.png"
-            if not os.path.exists(image_path):
-                print(f"Warning: Image file not found at {image_path}")
-                
-            replacements = {
-                '(durchgestrichenes Dreieck)': f'<img src="{image_path}" alt="Nicht waschen" width="50" height="50">',
-                'nicht bleichen': '<img src="bleichen-durchgestrichen.png" alt="Nicht bleichen" width="50" height="50">',
-                'nicht bÃ¼geln': '<img src="buegeln-durchgestrichen.png" alt="Nicht bÃ¼geln" width="50" height="50">',
-                'nicht chemisch reinigen': '<img src="chemisch-reinigen-durchgestrichen.png" alt="Nicht chemisch reinigen" width="50" height="50">',
-                'nicht im Trockner trocknen': '<img src="waermetrocknung-durchgestrichen.png" alt="Nicht im Trockner trocknen" width="50" height="50">',
-                'nicht schleudern': '<img src="schleudern-durchgestrichen.png" alt="Nicht schleudern" width="50" height="50">',
-            }
-            
-            for key, value in replacements.items():
-                text = text.replace(key, value)
-                
-            return text
-        
         # Apply text processing to Pflegekennzeichnung
-        df['Pflegekennzeichnung'] = df['Pflegekennzeichnung'].str.replace(';', '\\n')
-        df['Pflegekennzeichnung'] = df['Pflegekennzeichnung'].apply(replace_with_images)
-        df['Pflegekennzeichnung'] = df['Pflegekennzeichnung'].apply(lambda x: x[:2] + '	Â°C' + x[2:] if len(x) > 2 else x)
+        # Split by semicolon and join with newlines
+        df['Pflegekennzeichnung'] = df['Pflegekennzeichnung'].str.split(';').str.join('\n')
+        df['Pflegekennzeichnung'] = df['Pflegekennzeichnung'].apply(lambda x: x[:2] + 'Â°C' + x[2:] if len(x) > 2 and 'Â°C' not in x else x)
         
         # Define text classifications and their corresponding text content
         text_classifications = [
@@ -1757,7 +1791,7 @@ def import_order():
         result = execute_query(sql_query)
         if result is None or result.empty:
             return None
-            
+   
         rename_columns = {
             'OrderNr_Lang': 'txId',
             'POCode': 'txIdExternal',
@@ -1799,6 +1833,61 @@ def import_order():
         traceback.print_exc()
         return None
 
+def import_order_are_15():
+    try:
+        sql_file = Path(__file__).parent.parent / 'sql' / 'getorder_are_15.sql'
+        with open(sql_file, 'r', encoding='utf-8-sig') as f:  
+            sql_query = f.read().strip()  
+        if not sql_query:
+            print("Error: SQL query is empty")
+            return None
+            
+        result = execute_query(sql_query)
+        if result is None or result.empty:
+            return None
+   
+        rename_columns = {
+            'OrderNr_Lang': 'txId',
+            'POCode': 'txIdExternal',
+            'AdrId': 'supplier_id',
+            'Name': 'clerk',
+            'OSDate': 'txDate',
+            'OrgDatum': 'ex_txDate',
+            'OrderNr': 'OrderNr'
+        }
+        
+        rename_columns = {k: v for k, v in rename_columns.items() if k in result.columns}
+        result = result.rename(columns=rename_columns)
+        
+        result['company'] = 0
+        result['order_auto'] = 1
+        result['currency'] = 'USD'
+        result['ex_txDate'] = result['ex_txDate'].dt.strftime("%Y%m%d")
+        result['txDate'] = result['txDate'].dt.strftime("%Y%m%d")
+        result['supplier_id'] = result['OrderNr'].str[:5]
+        result['txDef'] = 'Kontrakt_EWOrder'
+        result['company'] = 1
+            
+        if 'clerk' in result.columns:
+            result['clerk'] = result['clerk'].apply(
+                lambda x: x.decode('utf-16-le') if isinstance(x, bytes) else str(x)
+            )
+        
+        available_columns = ['txId', 'txIdExternal', 'supplier_id', 'clerk', 'ex_txDate', 'txDate', 'company', 'currency', 'order_auto', 'txDef', 'company']
+        selected_columns = [col for col in available_columns if col in result.columns]
+        result = result[selected_columns]
+        
+        output_file = OUTPUT_DIR / "order_are_15_data.csv"
+        result.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
+        
+        return output_file if output_file.exists() else None
+        
+    except Exception as e:
+        print(f"Error in import_order_not_15: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None
+
 def import_order_pos():
     try:
         sql_file = Path(__file__).parent.parent / 'sql' / 'get_orderpos.sql'
@@ -1816,24 +1905,33 @@ def import_order_pos():
             'OrderNr_Lang': 'txId',
             'Menge': 'quantity',
             'OPreis': 'price',
-            'ArtikelCode': 'aid'
+            'ArtikelCode': 'aid',
+            'erfaßt_am': 'valid_from'
         }
         
         rename_columns = {k: v for k, v in rename_columns.items() if k in result.columns}
         result = result.rename(columns=rename_columns)
         
         result['company'] = 1
-        result['priceUnit'] = 'USD'
+        result['priceUnit'] = 'Stk'
         result['supplier_id'] = result['txId'].str[:5]
-        result['factory'] = 'DÃ¼sseldorf'
-        result['commodity_group_path'] = '20251002/Lieferdatum ab Werk/ROOT'
+        result['factory'] = 'Düsseldorf'
+        result['commodity_group_path'] = ''
+        result['unit'] = 'Stk'
+        result['use_proc_unit_for_purchase'] = '0'
+        result['supplierAid'] = ''
+        result['pos_text'] = ''
+        result['valid_from'] = result['valid_from'].dt.strftime("%Y%m%d")
+        # Convert price to string and replace decimal point with comma
+        result['price'] = result['price'].astype(str).str.replace('.', ',', regex=False)
+        
             
         if 'clerk' in result.columns:
             result['clerk'] = result['clerk'].apply(
                 lambda x: x.decode('utf-16-le') if isinstance(x, bytes) else str(x)
             )
         
-        available_columns = ['txId', 'quantity', 'price', 'aid', 'company', 'priceUnit', 'supplier_id', 'factory', 'commodity_group_path', 'txDef']
+        available_columns = ['txId', 'quantity', 'price', 'aid', 'company', 'priceUnit', 'supplier_id', 'factory', 'commodity_group_path', 'unit', 'use_proc_unit_for_purchase', 'supplierAid', 'valid_from', 'pos_text']
         selected_columns = [col for col in available_columns if col in result.columns]
         result = result[selected_columns]
         
@@ -1847,58 +1945,186 @@ def import_order_pos():
         import traceback
         traceback.print_exc()
         return None
-def import_order_classification():
+
+def import_order_pos_are_15():
     try:
-        sql_file = Path(__file__).parent.parent / 'sql' / 'get_order.sql'
+        output_file = OUTPUT_DIR / "order_pos_are_15_data.csv"
+        
+        # Create empty DataFrame with expected columns
+        columns = ['txId', 'quantity', 'price', 'aid', 'company', 'priceUnit', 
+                  'supplier_id', 'factory', 'commodity_group_path', 'unit', 
+                  'use_proc_unit_for_purchase', 'supplierAid', 'valid_from', 'pos_text']
+        empty_df = pd.DataFrame(columns=columns)
+        
+        # Write empty file with headers
+        empty_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
+        print(f"Created empty file: {output_file}")
+        
+        sql_file = Path(__file__).parent.parent / 'sql' / 'get_orderpos_are_15.sql'
         with open(sql_file, 'r', encoding='utf-8-sig') as f:  
             sql_query = f.read().strip()  
+            
         if not sql_query:
             print("Error: SQL query is empty")
-            return None
+            return output_file if output_file.exists() else None
             
+        print(f"Executing query: {sql_query}")
         result = execute_query(sql_query)
+        
         if result is None or result.empty:
-            return None
+            print("No results found, returning empty file")
+            return output_file if output_file.exists() else None
+            
+        print(f"Found {len(result)} rows")
             
         rename_columns = {
             'OrderNr_Lang': 'txId',
-            'POCode': 'txIdExternal',
-            'AdrId': 'supplier_id',
-            'Name': 'clerk',
-            'erfaÃŸt_am': 'txDate',
-            'OrgDatum': 'ex_txDate'
+            'Menge': 'quantity',
+            'OPreis': 'price',
+            'ArtikelCode': 'aid',
+            'erfaßt_am': 'valid_from'
         }
         
         rename_columns = {k: v for k, v in rename_columns.items() if k in result.columns}
         result = result.rename(columns=rename_columns)
         
-        result['order_auto'] = 1
-        result['currency'] = 'USD'
-        result['ex_txDate'] = result['ex_txDate'].dt.strftime("%Y%m%d")
-        result['txDate'] = result['txDate'].dt.strftime("%Y%m%d")
-        result['supplier_id'] = result['txId'].str[:5]
-        result['txDef'] = 'Kontrakt_EWOrder'
         result['company'] = 1
-        result['classification_system'] = 'Version'
-        result['feature[0]'] = 'CUT'
-        result['feature_value[0]'] = '1'
-        result['feature[1]'] = 'SpecSheet'
-        result['feature_value[1]'] = ''
-        result['K_Typ'] = '1'
-
+        result['priceUnit'] = 'Stk'
+        result['supplier_id'] = result['txId'].str[:5]
+        result['factory'] = 'Düsseldorf'
+        result['commodity_group_path'] = ''
+        result['unit'] = 'Stk'
+        result['use_proc_unit_for_purchase'] = '0'
+        result['supplierAid'] = ''
+        result['pos_text'] = ''
+        # Convert price to string and replace decimal point with comma
+        result['price'] = result['price'].astype(str).str.replace('.', ',', regex=False)
         
-
+        if 'valid_from' in result.columns:
+            result['valid_from'] = result['valid_from'].dt.strftime("%Y%m%d")
+        
         if 'clerk' in result.columns:
             result['clerk'] = result['clerk'].apply(
                 lambda x: x.decode('utf-16-le') if isinstance(x, bytes) else str(x)
             )
         
-        available_columns = ['txId', 'K_Typ', 'classification_system', 'feature[0]', 'feature_value[0]', 'feature[1]', 'feature_value[1]']
-        selected_columns = [col for col in available_columns if col in result.columns]
+        selected_columns = [col for col in columns if col in result.columns]
         result = result[selected_columns]
         
-        output_file = OUTPUT_DIR / "order_classification.csv"
+        # Write the actual data
         result.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
+        print(f"Data written to: {output_file}")
+        
+        return output_file if output_file.exists() else None
+        
+    except Exception as e:
+        print(f"Error in import_order_pos_are_15: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return output_file if 'output_file' in locals() and output_file.exists() else None
+
+def import_order_classification():
+    try:
+        # Read order position data directly
+        orderpos_sql_file = Path(__file__).parent.parent / 'sql' / 'get_orderpos.sql'
+        with open(orderpos_sql_file, 'r', encoding='utf-8-sig') as f:
+            orderpos_sql = f.read().strip()
+            
+        if not orderpos_sql:
+            print("Error: Order position SQL query is empty")
+            return None
+            
+        # Execute the order position query
+        orderpos_data = execute_query(orderpos_sql)
+        if orderpos_data is None or orderpos_data.empty:
+            print("Warning: No order position data returned from query")
+            return None
+            
+        # Export order position data to CSV
+        orderpos_output = OUTPUT_DIR / "orderpos_data.csv"
+        orderpos_data.to_csv(orderpos_output, index=False, encoding='utf-8-sig', sep=';')
+        print(f"✅ Exported order position data to: {orderpos_output}")
+        print(f"Order position data columns: {orderpos_data.columns.tolist()}")
+        print(f"Total order positions: {len(orderpos_data)}")
+            
+        # Process the main order classification query
+        sql_file = Path(__file__).parent.parent / 'sql' / 'get_order.sql'
+        with open(sql_file, 'r', encoding='utf-8-sig') as f:  
+            sql_query = f.read().strip()  
+            
+        if not sql_query:
+            print("Error: SQL query is empty")
+            return None
+            
+        order_data = execute_query(sql_query)
+        if order_data is None or order_data.empty:
+            return None
+            
+        # First check which columns exist in the data
+        available_columns = order_data.columns.tolist()
+        print("\n=== Order Data ===")
+        print(f"Available columns: {available_columns}")
+        print(f"Total orders: {len(order_data)}")
+        
+        # Print sample data for inspection
+        if not order_data.empty:
+            print("\nSample order data:")
+            print(order_data.head(2).to_string())
+        
+        # Define the column mappings
+        column_mapping = {
+            'OrderNr_Lang': 'txId',
+            'POCode': 'txIdExternal',
+            'AdrId': 'supplier_id',
+            'Name': 'clerk',
+            'erfasst_am': 'txDate',
+            'OrgDatum': 'ex_txDate'
+        }
+        
+        # Only keep mappings where the source column exists
+        rename_columns = {k: v for k, v in column_mapping.items() if k in available_columns}
+        print(f"Renaming columns: {rename_columns}")
+        
+        # Rename the columns
+        order_data = order_data.rename(columns=rename_columns)
+        
+        # Set default values
+        order_data['order_auto'] = 1
+        order_data['currency'] = 'USD'
+        
+        # Handle date columns if they exist
+        if 'ex_txDate' in order_data.columns and pd.api.types.is_datetime64_any_dtype(order_data['ex_txDate']):
+            order_data['ex_txDate'] = order_data['ex_txDate'].dt.strftime("%Y%m%d")
+        else:
+            order_data['ex_txDate'] = datetime.now().strftime("%Y%m%d")
+            
+        if 'txDate' in order_data.columns and pd.api.types.is_datetime64_any_dtype(order_data['txDate']):
+            order_data['txDate'] = order_data['txDate'].dt.strftime("%Y%m%d")
+        else:
+            order_data['txDate'] = datetime.now().strftime("%Y%m%d")
+        order_data['supplier_id'] = order_data['txId'].str[:5]
+        order_data['txDef'] = 'Kontrakt_EWOrder'
+        order_data['company'] = 1
+        order_data['classification_system'] = 'Version'
+        order_data['feature[0]'] = 'CUT'
+        order_data['feature_value[0]'] = '1'
+        order_data['feature[1]'] = 'SpecSheet'
+        order_data['feature_value[1]'] = ''
+        order_data['K_Typ'] = '1'
+
+        
+
+        if 'clerk' in order_data.columns:
+            order_data['clerk'] = order_data['clerk'].apply(
+                lambda x: x.decode('utf-16-le') if isinstance(x, bytes) else str(x)
+            )
+        
+        available_columns = ['txId', 'K_Typ', 'classification_system', 'feature[0]', 'feature_value[0]', 'feature[1]', 'feature_value[1]']
+        selected_columns = [col for col in available_columns if col in order_data.columns]
+        order_data = order_data[selected_columns]
+        
+        output_file = OUTPUT_DIR / "order_classification.csv"
+        order_data.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
         
         return output_file if output_file.exists() else None
         
@@ -1927,8 +2153,14 @@ if __name__ == "__main__":
     import_sku_gebinde()
     import_order()
     import_order_pos()
-    import_order_classification()"""
-    import_artikel_basicprice()
+    import_order_classification()
+    import_order()
+    import_order_are_15()
+    import_order_pos_are_15()
+    import_order_pos()"""
+    update_sku()
+    
+    
 
     
 
