@@ -40,7 +40,8 @@ SELECT
     f.isNoLabel AS label,
     f.isErw AS erw
 FROM ((t_Art_Mega_SKU sku
-INNER JOIN t_Art_MegaBase m ON sku.ArtNr = m.ArtNr)
-INNER JOIN t_Art_Flags f ON m.ArtNr = f.ArtNr)
+INNER JOIN t_Art_MegaBase m ON sku.ArtikelNeu = m.ArtikelNeu)
+INNER JOIN t_Art_Flags f ON m.ArtikelNeu = f.ArtikelNeu)
 WHERE m.Marke IN ('Corporate', 'EXCD', 'XO')
 AND sku.ArtikelCode IN ({aid_placeholders})
+AND sku.FarbeNeu NOT LIKE '%/%'

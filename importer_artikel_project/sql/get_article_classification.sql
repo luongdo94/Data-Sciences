@@ -12,6 +12,6 @@ SELECT m.ArtBasis AS aid, m.Produktgruppe as product_group, m.Marke as Marke,
        f.flag_plussize as oversize, f.isNoLabel as label, 
        f.isErw as erw 
 FROM [t_Art_MegaBase] m 
-INNER JOIN [t_Art_Flags] f ON m.ArtNr = f.ArtNr 
+INNER JOIN [t_Art_Flags] f ON m.ArtikelNeu = f.ArtikelNeu 
 WHERE m.Marke IN ('Corporate', 'EXCD', 'XO')
-AND m.ArtBasis IN ({aid_placeholders})
+AND m.ArtikelNeu IN ({aid_placeholders})

@@ -1,21 +1,25 @@
-import sys
+﻿import io
 import os
-import io
-from datetime import datetime
+import re
+import sys
 import pandas as pd
 from pathlib import Path
+from datetime import datetime
+from typing import List, Dict, Tuple, Optional, Union, Any
+from datetime import timedelta
 
-# Define OUTPUT_DIR directly to avoid import issues
-OUTPUT_DIR = Path(__file__).parent.parent / 'data' / 'output'
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
+# Add project root to Python path
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from src.database import execute_query, read_sql_query
-from run_comparison_standalone import diff, diff1, diff_EAN
+from src.database import get_sql_server_connection as get_connection, execute_query, read_sql_query
 
+# Define OUTPUT_DIR
+OUTPUT_DIR = project_root / 'data' / 'output'
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# Set up console encoding
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 if sys.stderr.encoding != 'utf-8':
@@ -28,22 +32,23 @@ def extract_numbers(value):
     numbers = re.findall(r'\d+', str(value))
     return ''.join(numbers) if numbers else ''
 
-def update_sku():
+def update_sku(diff):
     try:
-        if not diff:
-            raise ValueError("No AIDs found")
-        
         df = pd.DataFrame(execute_query(read_sql_query("getall_aid_ew.sql", diff)))
         if df.empty:
-            print("No data returned")
             return None
-
+    
+    # Read data from file and convert to list
+        df_update = pd.read_excel(Path(__file__).parent.parent / 'data' / 'ARTICLE_UPDATE_SRC.xlsx')
+        data_list = df_update.values.tolist()
+        
         # Map aid1 to aid if it exists
         if 'aid1' in df.columns:
             df['aid'] = df['aid1'].astype(str)
         
         # Add required columns similar to import_sku_basis
-        df['company'] = 1
+        df['aid'] = df_update['aid'].astype(str)
+        df['company'] = 0
         df['automatic_batch_numbering_pattern'] = '{No,000000000}'
         df['batch_management'] = 2
         df['batch_number_range'] = 'Chargen'
@@ -56,9 +61,10 @@ def update_sku():
         df['unitPi'] = df['unitSl'] = df['unitSt'] = 'Stk'
         df['replacement_time'] = 1
         df['taxPi'] = df['taxSl'] = 'Waren'
-        df['valid_from'] = datetime.now().strftime("%Y%m%d")
         df['valid_to'] = datetime.now().strftime("%Y%m%d")
         #df['country_of_origin'] = df['Ursprungsland'].str[:2] if 'Ursprungsland' in df else ''
+        df = df.merge(df_update, on='aid', how='inner')
+
         
         
         # Define columns for the update file
@@ -67,7 +73,7 @@ def update_sku():
             'batch_management', 'batch_number_range', 'batch_numbering_type', 'date_requirement',
             'discountable', 'factory', 'isPi', 'isShopArticle', 'isSl', 'isSt', 'isVerifiedArticle',
             'isCatalogArticle', 'unitPi', 'unitSl', 'unitSt', 'name', 'replacement_time',
-            'taxPi', 'taxSl', 'valid_from', 'valid_to',
+            'taxPi', 'taxSl', 'valid_to',
         ]
         
         # Only include columns that exist in the dataframe
@@ -78,7 +84,6 @@ def update_sku():
             output_file, index=False, encoding='utf-8-sig', sep=';'
         )
         
-        print(f"SKU update file created with {len(df)} records")
         return output_file if output_file.exists() else None
             
     except Exception as e:
@@ -87,14 +92,24 @@ def update_sku():
         traceback.print_exc()
         return None
 
-def import_sku_basis():
+def import_sku_basis(diff=None):
     try:
-        if not diff:
-            raise ValueError("No AIDs found")
-        
+        # Allow diff to be passed in or imported lazily; if none, process all SKUs
+        if diff is None:
+            try:
+                from run_comparison_standalone import diff as _diff
+                if _diff:
+                    diff = _diff
+            except Exception:
+                diff = None
+
+        # If a diff list was provided but is empty, treat as None
+        if diff is not None and len(diff) == 0:
+            diff = None
+
+        # If diff is provided, pass it to the SQL helper; otherwise let the SQL omit AID filtering
         df = pd.DataFrame(execute_query(read_sql_query("get_skus.sql", diff)))
         if df.empty:
-            print("No data returned")
             return None
 
         # Add required columns
@@ -112,7 +127,7 @@ def import_sku_basis():
         df['replacement_time'] = 1
         df['taxPi'] = df['taxSl'] = 'Waren'
         df['valid_from'] = datetime.now().strftime("%Y%m%d")
-        #df['country_of_origin'] = df['Ursprungsland'].str[:2] if 'Ursprungsland' in df else ''
+        df['country_of_origin'] = df['Ursprungsland'].str[:2] if 'Ursprungsland' in df else ''
 
         columns = ['aid', 'company', 'country_of_origin', 'automatic_batch_numbering_pattern',
                  'batch_management', 'batch_number_range', 'batch_numbering_type', 'date_requirement',
@@ -128,18 +143,29 @@ def import_sku_basis():
         return output_file if output_file.exists() else None
             
     except Exception as e:
-        print(f"Error in import_sku_basis: {e}")
         raise
 
-def import_sku_classification():
+def import_sku_classification(diff=None):
     try:
-        if not diff:
-            raise ValueError("No AIDs found")
+        # Allow diff to be passed in or imported lazily; if none, process all SKUs
+        if diff is None:
+            try:
+                from run_comparison_standalone import diff as _diff
+                if _diff:
+                    diff = _diff
+            except Exception:
+                diff = None
+
+        # If a diff list was provided but is empty, treat as None
+        if diff is not None and len(diff) == 0:
+            diff = None
+            
+        if diff is None:
+            return None
         
+        # If diff is provided, pass it to the SQL helper; otherwise let the SQL omit AID filtering
         df = pd.DataFrame(execute_query(read_sql_query("get_skus.sql", diff)))
-        df_color = pd.DataFrame(execute_query(read_sql_query("get_farbe_sortierung.sql")))
         if df.empty:
-            print("No data returned")
             return None
             
         # Add classification columns
@@ -147,51 +173,42 @@ def import_sku_classification():
         df['classification_system'] = 'Warengruppensystem'
         df['product_group_superior'] = df['Marke'] + '||Produktlinie||ROOT'
         df['ArtikelCode'] = df['aid']
-        df['Farbe'] = df['Farbe'].str.split('/').str[0].str.strip()
-        
-        # Get color sorting data
-        df_color = pd.DataFrame(execute_query(read_sql_query('get_farbe_sortierung.sql')))
-        # Merge with main dataframe to get Sort values
-        df = pd.merge(df, df_color, left_on='Farbe', right_on='ERP_Farben', how='left')
         
         # Define feature mappings
         features = [
-            ('Grammatur', df['Grammatur'].str.extract(r'(\d+)')[0]),
-            ('Oeko_MadeInGreen', df['Oeko_MadeInGreen']),
-            ('Partnerlook', df['Artikel_Partner'].str[:4]),
-            ('Sortierung', df['sku_ArtSort']),
-            ('Fabric_Herstellung', df['Fabric_Herstellung']),
-            ('Material', df['Zusammensetzung']),
-            ('Workwear', abs(df['workwear'])),
-            ('Produktlinie_Veredelung', abs(df['veredelung'])),
-            ('Produktlinie_Veredelungsart_Discharge', abs(df['discharge'])),
-            ('Produktlinie_Veredelungsart_DTG', abs(df['dtg'])),
-            ('Produktlinie_Veredelungsart_DYOJ', abs(df['dyoj'])),
-            ('Produktlinie_Veredelungsart_DYOP', abs(df['dyop'])),
-            ('Produktlinie_Veredelungsart_Flock', abs(df['flock'])),
-            ('Produktlinie_Veredelungsart_Siebdruck', abs(df['siebdruck'])),
-            ('Produktlinie_Veredelungsart_Stick', abs(df['stick'])),
-            ('Produktlinie_Veredelungsart_Sublimationsdruck', abs(df['sublimation'])),
-            ('Produktlinie_Veredelungsart_Transferdruck', abs(df['transfer'])),
-            ('Brand_Premium_Item', abs(df['premium'])),
-            ('Extras', abs(df['extras'])),
-            ('Kids', 1 - abs(df['erw'])),
-            ('Outdoor', abs(df['outdoor'])),
-            ('Size_Oversize', abs(df['oversize'])),
-            ('Geschlecht', df['Gender'].replace('Kinder', '')),
-            ('Brand_Label', abs(df['label'])),
-            ('Colour_Farbe', df['Farbe']),
-            ('Colour_Farbgruppe', df['Farbgruppe']),
-            ('Colour_Farbsortierung', df['Sort'].fillna('')),
-            # Handle encoding for 'Größe' column - check both possible encodings
-            ('Size_Größe', df.get('Größe', df.get('GrÃ¶ÃŸe', pd.Series('')))),
-            ('Size_Größe', df.get('Größe', df.get('GrÃ¶ÃŸe', pd.Series('')))),
-            ('Size_Größenspiegel', df.get('Größenspiegel', df.get('GrÃ¶ÃŸenspiegel', pd.Series('')))),
-            ('Colour_zweifarbig', df['zweifarbig']),
-            ('Ursprungsland', df['Ursprungsland'].str[:2]),
-            ('Fabric_Melange', df['ColorMelange']),
-            ('Zolltext_VZTA_aktiv_bis', pd.to_datetime(df['VZTA aktiv bis']).dt.strftime('%Y%m%d')),
-            ('Zolltext_VZTA_aktiv_von', pd.to_datetime(df['VZTA aktiv von']).dt.strftime('%Y%m%d'))
+            ('Grammatur', df['Grammatur'].str.extract(r'(\d+)')[0] if 'Grammatur' in df else ''),
+            ('Oeko_MadeInGreen', df['Oeko_MadeInGreen'] if 'Oeko_MadeInGreen' in df else ''),
+            ('Partnerlook', df['Artikel_Partner'].str[:4] if 'Artikel_Partner' in df else ''),
+            ('Sortierung', df['sku_ArtSort'] if 'sku_ArtSort' in df else ''),
+            ('Fabric_Herstellung', df['Fabric_Herstellung'] if 'Fabric_Herstellung' in df else ''),
+            ('Material', df['Zusammensetzung'] if 'Zusammensetzung' in df else ''),
+            ('Workwear', abs(df['workwear']) if 'workwear' in df else 0),
+            ('Produktlinie_Veredelung', abs(df['veredelung']) if 'veredelung' in df else 0),
+            ('Produktlinie_Veredelungsart_Discharge', abs(df['discharge']) if 'discharge' in df else 0),
+            ('Produktlinie_Veredelungsart_DTG', abs(df['dtg']) if 'dtg' in df else 0),
+            ('Produktlinie_Veredelungsart_DYOJ', abs(df['dyoj']) if 'dyoj' in df else 0),
+            ('Produktlinie_Veredelungsart_DYOP', abs(df['dyop']) if 'dyop' in df else 0),
+            ('Produktlinie_Veredelungsart_Flock', abs(df['flock']) if 'flock' in df else 0),
+            ('Produktlinie_Veredelungsart_Siebdruck', abs(df['siebdruck']) if 'siebdruck' in df else 0),
+            ('Produktlinie_Veredelungsart_Stick', abs(df['stick']) if 'stick' in df else 0),
+            ('Produktlinie_Veredelungsart_Sublimationsdruck', abs(df['sublimation']) if 'sublimation' in df else 0),
+            ('Produktlinie_Veredelungsart_Transferdruck', abs(df['transfer']) if 'transfer' in df else 0),
+            ('Brand_Premium_Item', abs(df['premium']) if 'premium' in df else 0),
+            ('Extras', abs(df['extras']) if 'extras' in df else 0),
+            ('Kids', 1 - abs(df['erw']) if 'erw' in df else 0),
+            ('Outdoor', abs(df['outdoor']) if 'outdoor' in df else 0),
+            ('Size_Oversize', abs(df['oversize']) if 'oversize' in df else 0),
+            ('Geschlecht', df['Gender'].replace('Kinder', '') if 'Gender' in df else ''),
+            ('Brand_Label', abs(df['label']) if 'label' in df else 0),
+            ('Colour_Farbe', df['Farbe'] if 'Farbe' in df else ''),
+            ('Colour_Farbgruppe', df['Farbgruppe'] if 'Farbgruppe' in df else ''),
+            ('Size_Größe', df['Größe'] if 'Größe' in df else ''),
+            ('Size_Größenspiegel', df['Größenspiegel'] if 'Größenspiegel' in df else ''),
+            ('Colour_zweifarbig', df['zweifarbig'] if 'zweifarbig' in df else ''),
+            ('Ursprungsland', df['Ursprungsland'].str[:2] if 'Ursprungsland' in df else ''),
+            ('Fabric_Melange', df['ColorMelange'] if 'ColorMelange' in df else ''),
+            ('Zolltext_VZTA_aktiv_bis', pd.to_datetime(df['VZTA aktiv bis']).dt.strftime('%Y%m%d') if 'VZTA aktiv bis' in df else ''),
+            ('Zolltext_VZTA_aktiv_von', pd.to_datetime(df['VZTA aktiv von']).dt.strftime('%Y%m%d') if 'VZTA aktiv von' in df else '')
         ]
         
         # Add features to dataframe
@@ -204,21 +221,40 @@ def import_sku_classification():
         columns = ['aid', 'company', 'classification_system', 'product_group', 'product_group_superior'] + feature_cols
         
         output_file = OUTPUT_DIR / "sku_classification.csv"
-        df[columns].to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
+        df[[col for col in columns if col in df.columns]].to_csv(
+            output_file, index=False, encoding='utf-8-sig', sep=';'
+        )
         
         return output_file if output_file.exists() else None
         
     except Exception as e:
-        print(f"Error in import_sku_classification: {e}")
         raise
-def import_sku_keyword():
+def import_sku_keyword(diff=None):
     try:
-        if not diff:
-            raise ValueError("No AIDs found")
+        # Allow diff to be passed in or imported lazily; if none, process all SKUs
+        if diff is None:
+            try:
+                from run_comparison_standalone import diff as _diff
+                if _diff:
+                    diff = _diff
+            except Exception:
+                diff = None
+
+        # Read the SQL query directly
+        with open(Path(__file__).parent.parent / 'sql' / 'get_sku_keywords.sql', 'r', encoding='utf-8') as f:
+            sql_query = f.read()
         
-        df = pd.DataFrame(execute_query(read_sql_query("get_sku_keywords.sql", diff)))
+        # Apply diff filtering if provided
+        if diff is not None and len(diff) > 0:
+            formatted_aids = ["'" + str(aid).replace("'", "''") + "'" for aid in diff]
+            sql_query = sql_query.replace('{aid_placeholders}', ", ".join(formatted_aids))
+        else:
+            # Remove the AID filter if no diff is provided
+            sql_query = sql_query.replace('AND sku.ArtikelCode IN ({aid_placeholders})', '')
+        
+        # Execute the query
+        df = pd.DataFrame(execute_query(sql_query))
         if df.empty:
-            print("No data returned")
             return None
             
         output_file = OUTPUT_DIR / "sku_keyword.csv"
@@ -227,20 +263,42 @@ def import_sku_keyword():
         return output_file if output_file.exists() else None
         
     except Exception as e:
-        print(f"Error in import_sku_keyword: {e}")
         raise
-def import_artikel_basis():
+def import_artikel_basis(diff=None):
     try:
-        from run_comparison_standalone import diff1
+        # Allow diff to be passed in or imported lazily; if none, process all articles
+        if diff is None:
+            try:
+                from run_comparison_standalone import diff1 as _diff
+                if _diff:
+                    diff = _diff
+            except (ImportError, FileNotFoundError):
+                diff = None
         
-        if not diff1:
-            raise ValueError("No AIDs found")
+        # If a diff list was provided but is empty, treat as None
+        if diff is not None and len(diff) == 0:
+            diff = None
         
-        # Debug: Print the SQL query
-        sql_query = read_sql_query("get_articles.sql", diff1)  
+        # Read the SQL query from file
+        with open(Path(__file__).parent.parent / 'sql' / 'get_articles.sql', 'r', encoding='utf-8') as f:
+            sql_query = f.read()
+            
+        # Apply diff filtering if provided
+        if diff is not None and len(diff) > 0:
+            formatted_aids = ["'" + str(aid).replace("'", "''") + "'" for aid in diff]
+            sql_query = sql_query.replace('{aid_placeholders}', ", ".join(formatted_aids))
+        else:
+            # Remove the AID filter condition if no diff is provided
+            sql_query = sql_query.replace('AND m.ArtBasis IN ({aid_placeholders})', '')
+            sql_query = re.sub(r'\s*AND\s*m\.ArtBasis\s*IN\s*\(\{aid_placeholders\}\)', 
+                             '', sql_query, flags=re.IGNORECASE)
+        
         # Execute the query
         df = pd.DataFrame(execute_query(sql_query))
-        # Add columns with specified values
+        if df.empty:
+            return None
+            
+        # Add required columns
         df['company'] = 0
         df['automatic_batch_numbering_pattern'] = '{No,000000000}'
         df['batch_management'] = 2
@@ -248,14 +306,33 @@ def import_artikel_basis():
         df['batch_numbering_type'] = 3
         df['date_requirement'] = 1
         df['discountable'] = 'ja'
-        df['factory'] = 'DÃ¼sseldorf'
-        df['isPi'] = 'ja'
-        df['isShopArticle'] = 'ja'
-        df['isSl'] = 'ja'
-        df['isSt'] = 'ja'
-        df['isVerifiedArticle'] = 'ja'
-        df['isCatalogArticle'] = 'ja'
-        df['unitPi'] = 'Stk'
+        df['factory'] = 'Düsseldorf'
+        df['isPi'] = df['isSl'] = df['isSt'] = 'ja'
+        df['isShopArticle'] = df['isVerifiedArticle'] = df['isCatalogArticle'] = 'ja'
+        df['unitPi'] = df['unitSl'] = df['unitSt'] = 'Stk'
+        df['replacement_time'] = 1
+        df['taxPi'] = df['taxSl'] = 'Waren'
+        df['valid_from'] = datetime.now().strftime("%Y%m%d")
+        
+        # Define output columns
+        columns = [
+            'aid', 'company', 'automatic_batch_numbering_pattern',
+            'batch_management', 'batch_number_range', 'batch_numbering_type', 'date_requirement',
+            'discountable', 'factory', 'isPi', 'isShopArticle', 'isSl', 'isSt', 'isVerifiedArticle',
+            'isCatalogArticle', 'unitPi', 'unitSl', 'unitSt', 'name', 'replacement_time',
+            'taxPi', 'taxSl', 'valid_from'
+        ]
+        
+        # Save to CSV
+        output_file = OUTPUT_DIR / "artikel_basis.csv"
+        df[[col for col in columns if col in df.columns]].to_csv(
+            output_file, index=False, encoding='utf-8-sig', sep=';'
+        )
+        
+        return output_file if output_file.exists() else None
+            
+    except Exception as e:
+        raise
         df['unitSl'] = 'Stk'
         df['unitSt'] = 'Stk'
         df['name'] = df['name']
@@ -276,37 +353,49 @@ def import_artikel_basis():
         if not df.empty:
             print("data available")
         else:
-            print("No data returned")
             return None
 
         output_file = OUTPUT_DIR / "artikel_basis.csv"
         df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
         
-        print(f"\nData exported to: {output_file}")
         return output_file if output_file.exists() else None
         
     except Exception as e:
-        print(f"Error in import_artikel_basis: {e}")
         raise
 
 
 
-def import_artikel_classification():
-    #Import article classification data for AIDs not in ERP
+def import_artikel_classification(diff1=None):
+    # Import article classification data
     try:
-        from run_comparison_standalone import diff1
+        # Allow diff1 to be passed in or imported lazily; if none, process all articles
+        if diff1 is None:
+            try:
+                from run_comparison_standalone import diff1 as _diff
+                if _diff:
+                    diff1 = _diff
+            except (ImportError, FileNotFoundError):
+                diff1 = None
         
-        if not diff1:
-            raise ValueError("No AIDs found")
+        # If a diff1 list was provided but is empty, treat as None
+        if diff1 is not None and len(diff1) == 0:
+            diff1 = None
             
-        print(f"Processing {len(diff1)} AIDs for classification...")
-        
-        # Read and execute the query from SQL file
-        sql_query = read_sql_query("get_article_classification.sql", diff1)
+        # Read the SQL query from file
+        with open(Path(__file__).parent.parent / 'sql' / 'get_article_classification.sql', 'r', encoding='utf-8') as f:
+            sql_query = f.read()
+            
+        # If we have diff1, use it to filter the query
+        if diff1 is not None and len(diff1) > 0:
+            sql_query = read_sql_query("get_article_classification.sql", diff1)
+        else:
+            # Remove the AID filter if no diff1 is provided
+            sql_query = sql_query.replace('AND m.ArtBasis IN ({aid_placeholders})', '')
+            
+        # Execute the query
         df = pd.DataFrame(execute_query(sql_query))
         
         if df.empty:
-            print("No classification data returned")
             return None
         
         # Process the data
@@ -359,7 +448,6 @@ def import_artikel_classification():
                     try:
                         value = feature_value(row)
                     except Exception as e:
-                        print(f"Error processing feature {feature_name}: {e}")
                         value = ''
                 elif feature_value == '':
                     value = ''
@@ -374,33 +462,48 @@ def import_artikel_classification():
         
         result_df = pd.DataFrame(result_rows)
         
-        # Save to CSV with _notinERP suffix
+        # Save to CSV with proper encoding
         output_file = OUTPUT_DIR / "artikel_classification.csv"
         result_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
         
-        print(f"Classification data exported to: {output_file}")
         return output_file if output_file.exists() else None
         
     except Exception as e:
-        print(f"Error in import_artikel_classification: {e}")
         import traceback
         traceback.print_exc()
         raise
 
-def import_artikel_zuordnung():
-    #Import article association data (Zuordnung) for AIDs not in ERP
+def import_artikel_zuordnung(diff1=None):
+    # Import article association data (Zuordnung)
     try:
-        from run_comparison_standalone import diff1
+        # Allow diff1 to be passed in or imported lazily; if none, process all articles
+        if diff1 is None:
+            try:
+                from run_comparison_standalone import diff1 as _diff
+                if _diff:
+                    diff1 = _diff
+            except (ImportError, FileNotFoundError):
+                diff1 = None
         
-        if not diff1:
-            raise ValueError("No AIDs found")
+        # If a diff1 list was provided but is empty, treat as None
+        if diff1 is not None and len(diff1) == 0:
+            diff1 = None
         
-        # Read and execute the query from SQL file
-        sql_query = read_sql_query("get_article_zuordnung.sql", diff1)
+        # Read the SQL query from file
+        with open(Path(__file__).parent.parent / 'sql' / 'get_article_zuordnung.sql', 'r', encoding='utf-8') as f:
+            sql_query = f.read()
+            
+        # If we have diff1, use it to filter the query
+        if diff1 is not None and len(diff1) > 0:
+            sql_query = read_sql_query("get_article_zuordnung.sql", diff1)
+        else:
+            # Remove the entire AID filter line if no diff1 is provided
+            sql_query = '\n'.join([line for line in sql_query.split('\n') if 'ArtBasis IN' not in line])
+            
+        # Execute the query
         df = pd.DataFrame(execute_query(sql_query))
         
         if df.empty:
-            print("No article association data returned")
             return None
         
         # Process the data
@@ -441,16 +544,36 @@ def import_artikel_zuordnung():
         traceback.print_exc()
         raise
 
-def import_artikel_keyword():
-    #Import article keywords for AIDs not in ERP
+def import_artikel_keyword(diff1=None):
+    # Import article keywords for AIDs not in ERP
     try:
-        from run_comparison_standalone import diff1
+        # Allow diff1 to be passed in or imported lazily; if none, process all articles
+        if diff1 is None:
+            try:
+                from run_comparison_standalone import diff1 as _diff
+                if _diff:
+                    diff1 = _diff
+            except (ImportError, FileNotFoundError):
+                diff1 = None
         
-        if not diff1:
-            raise ValueError("No AIDs found")
+        # If a diff1 list was provided but is empty, treat as None
+        if diff1 is not None and len(diff1) == 0:
+            diff1 = None
         
-        # Read and execute the query from SQL file
-        sql_query = read_sql_query("get_article_keyword.sql", diff1)
+        # Read the SQL query from file
+        with open(Path(__file__).parent.parent / 'sql' / 'get_article_keyword.sql', 'r', encoding='utf-8') as f:
+            sql_query = f.read()
+            
+        # If we have diff1, use it to filter the query
+        if diff1 is not None and len(diff1) > 0:
+            print(f"Processing {len(diff1)} AIDs for article keywords...")
+            sql_query = read_sql_query("get_article_keyword.sql", diff1)
+        else:
+            print("Processing all article data for keywords...")
+            # Remove the entire AID filter line if no diff1 is provided
+            sql_query = '\n'.join([line for line in sql_query.split('\n') if 'ArtBasis IN' not in line])
+            
+        # Execute the query
         df = pd.DataFrame(execute_query(sql_query))
         
         if df.empty:
@@ -458,17 +581,12 @@ def import_artikel_keyword():
             return None
         
         # Process the data
-        # Replace empty or NaN values with 'kein SchlÃ¼sselwort'
-        df['keyword'] = df['keyword'].fillna('kein SchlÃ¼sselwort')
-        df['keyword'] = df['keyword'].replace('', 'kein SchlÃ¼sselwort')
+        # Replace empty or NaN values with 'kein Schlüsselwort'
+        df['keyword'] = df['keyword'].fillna('kein Schlüsselwort')
+        df['keyword'] = df['keyword'].replace('', 'kein Schlüsselwort')
         
         # Add columns with specified values
         df['company'] = 0
-        df['language'] = 'DE'
-        df['separator'] = ','
-        
-        # Reorder columns
-        df = df[['aid', 'company', 'keyword', 'language', 'separator']]
         
         # Save to CSV
         output_file = OUTPUT_DIR / "artikel_keyword.csv"
@@ -481,16 +599,35 @@ def import_artikel_keyword():
         print(f"Error in import_artikel_keyword: {e}")
         import traceback
         traceback.print_exc()
+        raise
 
-def import_artikel_text():
+def import_artikel_text(diff1=None):
     try:
-        from run_comparison_standalone import diff1
+        # Allow diff1 to be passed in or imported lazily; if none, process all articles
+        if diff1 is None:
+            try:
+                from run_comparison_standalone import diff1 as _diff
+                if _diff:
+                    diff1 = _diff
+            except (ImportError, FileNotFoundError):
+                diff1 = None
         
-        if not diff1:
-            raise ValueError("No AIDs found")
+        # If a diff1 list was provided but is empty, treat as None
+        if diff1 is not None and len(diff1) == 0:
+            diff1 = None
         
-        # Read and execute the query from SQL file
-        sql_query = read_sql_query("get_article_text_DE.sql", diff1)
+        # Read the SQL query from file
+        with open(Path(__file__).parent.parent / 'sql' / 'get_article_text_DE.sql', 'r', encoding='utf-8') as f:
+            sql_query = f.read()
+            
+        # If we have diff1, use it to filter the query
+        if diff1 is not None and len(diff1) > 0:
+            print(f"Processing {len(diff1)} AIDs for article text...")
+            sql_query = read_sql_query("get_article_text_DE.sql", diff1)
+        else:
+            print("Processing all article data for text...")
+            # Remove the entire AID filter line if no diff1 is provided
+            sql_query = '\n'.join([line for line in sql_query.split('\n') if 'ArtNr IN' not in line])
         df = pd.DataFrame(execute_query(sql_query))
         
         if df.empty:
@@ -500,14 +637,17 @@ def import_artikel_text():
         # Process the data
         # Replace NaN values with empty string and strip whitespace
         df = df.fillna('').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
-        
+        # Apply text processing to Pflegekennzeichnung
+        df['Pflegekennzeichnung'] = df['Pflegekennzeichnung'].str.split(';').str.join('\n')
+        df['Pflegekennzeichnung'] = df['Pflegekennzeichnung'].apply(lambda x: x[:2] + 'Â°C' + x[2:] if len(x) > 2 and 'Â°C' not in x else x)
         # Define text classifications and their corresponding text content
         text_classifications = [
             ('Webshoptext', df['ArtText'] + ' ' + df['ArtSpec1'] + ' ' + df['ArtSpec2']),
             ('Artikeltext', df['ArtText'] + ' ' + df['ArtSpec1'] + ' ' + df['ArtSpec2']),
             ('Katalogtext', df['ArtText'] + ' ' + df['ArtSpec1'] + ' ' + df['ArtSpec2']),
             ('Vertriebstext', df['ArtBem'] + ' ' + df['ArtText'] + ' ' + df['VEText'] + ' ' + df['VEText2'] + ' ' + df['VEText_SP']),
-            ('Rechnungstext', df['ArtBem'])
+            ('Rechnungstext', df['ArtBem']),
+            ('Pflegehinweise', df['Pflegekennzeichnung'])
         ]
         
         output_files = []
@@ -551,7 +691,91 @@ def import_artikel_text():
                 output_files.append(output_file)
                 print(f"{classification} data exported with {len(df_result)} rows to: {output_file}")
         
-        return output_files if output_files else None
+        # Process Pflegehinweise file after all classifications are done
+        pflegehinweise_file = OUTPUT_DIR / "article_text_pflegehinweise.csv"
+        if pflegehinweise_file.exists():
+            # Read with explicit UTF-8-SIG encoding to handle BOM
+            df_pflegehinweise = pd.read_csv(pflegehinweise_file, sep=';', encoding='utf-8-sig')
+            
+            if 'text' in df_pflegehinweise.columns:
+                # Ensure text is properly encoded
+                df_pflegehinweise['text'] = df_pflegehinweise['text'].astype(str)
+                
+                # Add 'Waschen:' at the beginning with consistent formatting
+                df_pflegehinweise['text'] = 'Waschen: || ' + df_pflegehinweise['text']
+                
+                # Handle 'Reinigung' section
+                df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
+                    lambda x: x.replace('Keine chemische', '|| Reinigung: || Keine chemische')
+                    if 'Keine chemische' in x and 'Reinigung:' not in x
+                    else x
+                )
+                
+                # Define the keywords to add with their patterns
+                keywords = {
+                    'Trocknen': '||Trocknen',
+                    'mÃ¤ÃŸig': '||BÃ¼geln',
+                    'Reinigen': '||Reinigen'
+                }
+                
+                # Add keywords before each section if they don't already have a colon
+                for pattern, keyword in keywords.items():
+                    # Special handling for BÃ¼geln to place it before 'nicht heiÃŸ bÃ¼geln', 'nicht bÃ¼geln', or 'mÃ¤ÃŸig'
+                    if keyword == 'BÃ¼geln':
+                        # First check for 'nicht heiÃŸ bÃ¼geln'
+                        df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
+                            lambda x: x.replace('nicht heiÃŸ bÃ¼geln', ' ||BÃ¼geln: || nicht heiÃŸ bÃ¼geln')
+                            if 'nicht heiÃŸ bÃ¼geln' in x and 'BÃ¼geln:' not in x
+                            else x
+                        )
+                        # Then check for 'nicht bÃ¼geln' if 'nicht heiÃŸ bÃ¼geln' wasn't found
+                        df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
+                            lambda x: x.replace('nicht bÃ¼geln', ' ||BÃ¼geln: || nicht bÃ¼geln')
+                            if 'nicht bÃ¼geln' in x and 'BÃ¼geln:' not in x
+                            else x
+                        )
+                        # Handle standalone 'BÃ¼geln' section
+                        df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
+                            lambda x: x.replace('BÃ¼geln:', ' ||BÃ¼geln: ||') if 'BÃ¼geln:' in x and '||BÃ¼geln: ||' not in x else x
+                        )
+                        # Handle case where 'BÃ¼geln' appears without a colon
+                        df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
+                            lambda x: x.replace(' BÃ¼geln ', ' ||BÃ¼geln: || ') if ' BÃ¼geln ' in x and 'BÃ¼geln:' not in x and '||BÃ¼geln: ||' not in x else x
+                        )
+                        # Finally check for 'mÃ¤ÃŸig' if neither of the above were found
+                        df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
+                            lambda x: x.replace('mÃ¤ÃŸig', '||BÃ¼geln: || mÃ¤ÃŸig')
+                            if 'mÃ¤ÃŸig' in x and f' {keyword}:' not in x
+                            else x
+                        )
+                    else:
+                        # Standard handling for other keywords
+                        df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
+                            lambda x: x.replace(f' {pattern}', f' {keyword}: || {pattern}') 
+                            if f' {keyword}:' not in x and f' {pattern}' in x 
+                            else x
+                        )
+                        
+                        # Then ensure the format is consistent (in case only one separator was added)
+                        df_pflegehinweise['text'] = df_pflegehinweise['text'].str.replace(
+                            f' {keyword}: {pattern}', 
+                            f' {keyword}: || {pattern}'
+                        )
+                
+                # Clean up any double spaces that might have been created
+                df_pflegehinweise['text'] = df_pflegehinweise['text'].str.replace(r'\s+', ' ', regex=True)
+                
+                # Ensure consistent spacing around separators
+                df_pflegehinweise['text'] = df_pflegehinweise['text'].str.replace('\|\|', ' || ').str.replace('\s+', ' ').str.strip()
+                df_pflegehinweise['text'] = df_pflegehinweise['text'].str.replace(' : ', ': ')
+                
+                # Save with proper encoding
+                df_pflegehinweise.to_csv(pflegehinweise_file, index=False, encoding='utf-8-sig', sep=';')
+                print(f"Care instructions with keywords added and saved to: {pflegehinweise_file}")              
+            else:
+                print(f"Warning: 'text' column not found in {pflegehinweise_file}")
+        
+        return output_files if output_files else []
         
     except Exception as e:
         print(f"Error in import_artikel_text: {e}")
@@ -563,13 +787,28 @@ import re
 
 def import_sku_text():
     try:
-        from run_comparison_standalone import diff
+        # Try to import diff, but make it optional
+        try:
+            from run_comparison_standalone import diff
+            if not diff:
+                print("No AIDs found in diff. Processing all data...")
+                diff = None
+        except (ImportError, FileNotFoundError):
+            print("Comparison module not found. Processing all data...")
+            diff = None
         
-        if not diff:
-            raise ValueError("No AIDs found")
-        
-        # Read and execute the query from SQL file
-        sql_query = read_sql_query("get_sku_text_DE.sql", diff)
+        # Read the SQL query from file
+        with open(Path(__file__).parent.parent / 'sql' / 'get_sku_text_DE.sql', 'r', encoding='utf-8') as f:
+            sql_query = f.read()
+            
+        # If we have diff, use it to filter the query
+        if diff is not None:
+            sql_query = read_sql_query("get_sku_text_DE.sql", diff)
+        else:
+            # Remove the AID filter if no diff is provided
+            sql_query = sql_query.replace('AND s.ArtikelCode IN ({aid_placeholders})', '')
+            
+        # Execute the query
         df = pd.DataFrame(execute_query(sql_query))
         
         if df.empty:
@@ -581,10 +820,9 @@ def import_sku_text():
         df = df.fillna('').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
         
         # Apply text processing to Pflegekennzeichnung
-        # Split by semicolon and join with newlines
         df['Pflegekennzeichnung'] = df['Pflegekennzeichnung'].str.split(';').str.join('\n')
-        df['Pflegekennzeichnung'] = df['Pflegekennzeichnung'].apply(lambda x: x[:2] + 'Â°C' + x[2:] if len(x) > 2 and 'Â°C' not in x else x)
-        
+        df['Pflegekennzeichnung'] = df['Pflegekennzeichnung'].apply(lambda x: x[:2] + '°C' + x[2:] if len(x) > 2 and '°C' not in x else x)
+
         # Define text classifications and their corresponding text content
         text_classifications = [
             ('Webshoptext', df['ArtText'] + ' ' + df['ArtSpec1'] + ' ' + df['ArtSpec2']),
@@ -597,6 +835,7 @@ def import_sku_text():
         
         output_files = []
         
+        # Process Pflegehinweise separately
         for classification, text_content in text_classifications:
             # Create a copy of the base dataframe for this classification
             df_result = df[['ArtikelCode']].copy()
@@ -607,7 +846,6 @@ def import_sku_text():
             df_result['language'] = 'DE'
             df_result['textClassification'] = classification
             df_result['text'] = text_content.str.strip()  # Remove extra whitespace
-            
             
             # Remove rows with empty text
             df_result = df_result[df_result['text'].str.len() > 0]
@@ -633,11 +871,88 @@ def import_sku_text():
             output_file = OUTPUT_DIR / f"sku_text_{classification.lower()}.csv"
             df_result.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
             
-            if output_file.exists():
-                output_files.append(output_file)
-                print(f"{classification} data exported with {len(df_result)} rows to: {output_file}")
+            # Process Pflegehinweise file after all classifications are done
+            pflegehinweise_file = OUTPUT_DIR / "sku_text_pflegehinweise.csv"
+            if pflegehinweise_file.exists():
+                df_pflegehinweise = pd.read_csv(pflegehinweise_file, sep=';', encoding='utf-8-sig')
+                
+                # Add keywords to specific positions in the text if they're not already present
+                if 'text' in df_pflegehinweise.columns:
+                    # Ensure text is properly encoded and clean
+                    df_pflegehinweise['text'] = df_pflegehinweise['text'].astype(str)
+                    
+                    # Add 'Waschen:' at the beginning of the text with consistent formatting
+                    df_pflegehinweise['text'] = 'Waschen: || ' + df_pflegehinweise['text']
+                
+                # Add 'Reinigung: ||' before 'Keine chemische' if it exists
+                df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
+                    lambda x: x.replace('Keine chemische', '|| Reinigung: || Keine chemische')
+                    if 'Keine chemische' in x and 'Reinigung:' not in x
+                    else x
+                )
+                
+                # Define the keywords to add with their patterns
+                keywords = {
+                    'Trocknen': '||Trocknen',
+                    'mäßig': '||Bügeln',
+                    'Reinigen': '||Reinigen'
+                }
+                
+                # Add keywords before each section if they don't already have a colon
+                for pattern, keyword in keywords.items():
+                    # Special handling for BÃ¼geln to place it before 'nicht heiÃŸ bÃ¼geln', 'nicht bÃ¼geln', or 'mÃ¤ÃŸig'
+                    if keyword == 'Bügeln':
+                        # First check for 'nicht heiÃŸ bÃ¼geln'
+                        df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
+                            lambda x: x.replace('nicht heiß bügeln', ' ||Bügeln: || nicht heiß bügeln')
+                            if 'nicht heiß bügeln' in x and 'Bügeln:' not in x
+                            else x
+                        )
+                        # Then check for 'nicht bügeln' if 'nicht heiÃŸ bÃ¼geln' wasn't found
+                        df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
+                            lambda x: x.replace('nicht bügeln', ' ||Bügeln: || nicht bügeln')
+                            if 'nicht bügeln' in x and 'Bügeln:' not in x
+                            else x
+                        )
+                        # Handle standalone 'BÃ¼geln' section
+                        df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
+                            lambda x: x.replace('Bügeln:', ' ||Bügeln: ||') if 'Bügeln:' in x and '||Bügeln: ||' not in x else x
+                        )
+                        # Handle case where 'BÃ¼geln' appears without a colon
+                        df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
+                            lambda x: x.replace(' Bügeln ', ' ||Bügeln: || ') if 'Bügeln' in x and 'Bügeln:' not in x and '||Bügeln: ||' not in x else x
+                        )
+                        # Finally check for 'mÃ¤ÃŸig' if neither of the above were found
+                        df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
+                            lambda x: x.replace('mässig', '||Bügeln: || mäßig')
+                            if 'mäßig' in x and f' {keyword}:' not in x
+                            else x
+                        )
+                    else:
+                        # Standard handling for other keywords
+                        df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
+                            lambda x: x.replace(f' {pattern}', f' {keyword}: || {pattern}') 
+                            if f' {keyword}:' not in x and f' {pattern}' in x 
+                            else x
+                        )
+                        
+                        # Then ensure the format is consistent (in case only one separator was added)
+                        df_pflegehinweise['text'] = df_pflegehinweise['text'].str.replace(
+                            f' {keyword}: {pattern}', 
+                            f' {keyword}: || {pattern}'
+                        )
+                
+                # Clean up any double spaces that might have been created
+                df_pflegehinweise['text'] = df_pflegehinweise['text'].str.replace(r'\s+', ' ', regex=True)
+                
+                # Save the updated file
+                df_pflegehinweise.to_csv(pflegehinweise_file, index=False, encoding='utf-8-sig', sep=';')
+                print(f"Care instructions with keywords added and saved to: {pflegehinweise_file}")
+            else:
+                print(f"Warning: 'text' column not found in {pflegehinweise_file}")
         
         return output_files if output_files else None
+        
     except Exception as e:
         print(f"Error in import_sku_text: {e}")
         import traceback
@@ -665,11 +980,22 @@ def import_artikel_variant():
         #df['company'] = 0
         #df['classification_system'] = 'Warengruppensystem'
         
+        # Handle encoding for 'GrÃ¶ÃŸe' column - check both possible encodings
+        groesse_col = 'GrÃ¶ÃŸe' if 'GrÃ¶ÃŸe' in df.columns else 'GrÃƒÂ¶ÃƒÅ¸e'
+        farbe_col = 'Farbe' if 'Farbe' in df.columns else 'Farbe'  # Keep as is, but check if exists
+        
+        if groesse_col not in df.columns:
+            print(f"Error: Could not find size column in: {df.columns.tolist()}")
+            return None
+            
+        if farbe_col not in df.columns:
+            print(f"Error: Could not find color column in: {df.columns.tolist()}")
+            return None
+        
         # Define attributes mapping with proper values
         attributes = [
-            #('variant_aid', df['sku']),
-            ('Size_GrÃ¶ÃŸe', df['GrÃ¶ÃŸe']),
-            ('Colour_Farbe', df['Farbe']),
+            ('Size_GrÃ¶ÃŸe', df[groesse_col]),
+            ('Colour_Farbe', df[farbe_col]),
         ]
         
         # Add attributes to dataframe and create is_mandatory  columns
@@ -705,8 +1031,6 @@ def import_artikel_variant():
         # Save to CSV with proper encoding
         output_file = OUTPUT_DIR / "variant_export.csv"
         result_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
-        
-        print(f"Variant data exported successfully to: {output_file}")
         print(f"Total variants processed: {len(result_df)}")
         
         return output_file if output_file.exists() else None
@@ -741,13 +1065,16 @@ def import_sku_variant():
             return None
         
         # Define attributes mapping with proper values
-        # Handle encoding for 'Größe' column - check both possible encodings
-        groesse_col = 'Größe' if 'Größe' in df.columns else 'GrÃ¶ÃŸe'
-        
+        # Handle encoding for 'Größe' column - check all possible encodings
+        groesse_col = next((col for col in df.columns if col in ['Größe', 'GrÃ¶ÃŸe', 'GrÃƒÂ¶ÃƒÅ¸e']), None)
+        if groesse_col is None:
+            print("Warning: Could not find size column in:", df.columns.tolist())
+            return None
+            
         attributes = [
-            ('Size_Größe', df[groesse_col]),
-            ('Colour_Farbe', df['Farbe']),
-            ('Ursprungsland', df['Ursprungsland'].str[:2])
+            ('Size_Größe', df[groesse_col].fillna('')),
+            ('Colour_Farbe', df['Farbe'].fillna('') if 'Farbe' in df.columns else pd.Series([''] * len(df))),
+            ('Ursprungsland', df['Ursprungsland'].str[:2].fillna('') if 'Ursprungsland' in df.columns else pd.Series([''] * len(df)))
         ]
         
         # Add attributes to dataframe and create is_mandatory  columns
@@ -784,9 +1111,6 @@ def import_sku_variant():
         output_file = OUTPUT_DIR / "VARIANT_IMPORT - SKU-Variantenverknüpfung Import.csv"
         result_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
         
-        print(f"Variant data exported successfully to: {output_file}")
-        print(f"Total variants processed: {len(result_df)}")
-        
         return output_file if output_file.exists() else None
         
     except Exception as e:
@@ -819,11 +1143,12 @@ def import_artikel_pricestaffeln():
             'Menge_bis': 'quantity_to'
         })
         
-        # Pivot the data to get price tiers as columns
-        df_pivot = df.pivot(
+        # Pivot the data to get price tiers as columns using pivot_table
+        df_pivot = df.pivot_table(
             index='aid',
             columns='Staffel',
-            values='price'
+            values='price',
+            aggfunc='first'  # Keep the first price if there are duplicates
         ).reset_index()
         
         # Rename columns for clarity
@@ -833,19 +1158,19 @@ def import_artikel_pricestaffeln():
             3: 'price_3'
         })
         
-        # Get unique article IDs and ensure we have exactly one row per article
-        df_pivot = df_pivot.drop_duplicates(subset=['aid'], keep='first')
-        
         # Create final dataframe with required structure
         result = []
         pricelists = ['Preisstaffel 1-3', 'Preisstaffel 2-3']
         
-        # Create two rows for each article (one for each pricelist)
+        # Create rows for each article and pricelist combination
         for _, row in df_pivot.iterrows():
             for pricelist in pricelists:
-                row_dict = row.to_dict()
-                row_dict['pricelist'] = pricelist
-                result.append(row_dict)
+                # Only add if at least one price exists for this pricelist
+                price_cols = ['price_1', 'price_2', 'price_3'] if pricelist == 'Preisstaffel 1-3' else ['price_2', 'price_3']
+                if any(pd.notna(row.get(col)) and row.get(col) != '' for col in price_cols):
+                    row_dict = row.to_dict()
+                    row_dict['pricelist'] = pricelist
+                    result.append(row_dict)
         
         final_df = pd.DataFrame(result)
         
@@ -896,169 +1221,200 @@ def import_artikel_pricestaffeln():
         ]
         final_df = final_df[columns]
 
+        # Define the desired column order for main price data
+        main_price_columns = [
+            'aid', 'company', 'currency', 'unit', 'pricelist',
+            'valid_from', 'limitValidity'
+        ]
+        
+        # Add price tier columns in order
+        for i in range(3):
+            main_price_columns.extend([
+                f'price[{i}]',
+                f'amountFrom[{i}]',
+                f'discountable_idx[{i}]',
+                f'surchargeable_idx[{i}]'
+            ])
+        
+        # Keep only columns that exist in the dataframe
+        main_price_columns = [col for col in main_price_columns if col in final_df.columns]
+        final_df = final_df[main_price_columns]
+        
         # Save to CSV with proper encoding
         output_file = OUTPUT_DIR / "PRICELIST- Artikel-Preisstafeln.csv"
         final_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
 
-        print(f"Price data exported successfully to: {output_file}")
-
+        print(f"Preisstafeln exported successfully to: {output_file}")
+        #create validity data
         valid_path = Path("C:/Users/gia.luongdo/Python/importer_artikel_project/data/Price_ERP.csv")
         if not valid_path.exists():
             print(f"Warning: Validity file not found at {valid_path}")
             return output_file if output_file.exists() else None
             
-        validity_df = pd.read_csv(valid_path, sep=';', header=0, dtype=str)
-        validity_df.columns = [col.lower() for col in validity_df.columns]
+        val_df = pd.read_csv(valid_path, sep=';', header=0, dtype=str)
+        val_df.columns = [col.lower() for col in val_df.columns]
         
-        required_columns = ['aid', 'valid_from', 'price', 'min_amount']
-        existing_columns = [col for col in required_columns if col in validity_df.columns]
-        validity_df = validity_df[existing_columns]
-        
-        if 'price' in validity_df.columns:
-            validity_df['price'] = pd.to_numeric(validity_df['price'], errors='coerce')
-        if 'min_amount' in validity_df.columns:
-            validity_df['min_amount'] = pd.to_numeric(validity_df['min_amount'], errors='coerce')
-
-        if not validity_df.empty and 'aid' in validity_df.columns and 'aid' in final_df.columns:
-            # Clean and prepare aid columns
-            final_df['aid'] = final_df['aid'].astype(str).str.strip()
-            validity_df['aid'] = validity_df['aid'].astype(str).str.strip().str.replace('_obsolet', '', regex=False)
+        # Rename 'data' column to 'pricelist' if it exists
+        if 'data' in val_df.columns:
+            val_df = val_df.rename(columns={'data': 'pricelist'})
+        # Filter out rows where aid contains '_obsolet'
+        if 'aid' in val_df.columns:
+            val_df = val_df[~val_df['aid'].str.contains('_obsolet', case=False, na=False)]
+        # Replace dots with commas in the price column
+        if 'price' in val_df.columns:
+            val_df['price'] = val_df['price'].astype(str).str.replace('.', ',', regex=False)
             
-            # Handle column name conflicts
-            suffix_cols = {col: f"{col}_new" for col in validity_df.columns 
-                         if col in final_df.columns and col != 'aid'}
+        required_columns = ['aid', 'pricelist', 'price', 'min_amount', 'valid_from', 'aktiv']
+        existing_columns = [col for col in required_columns if col in val_df.columns]
+        val_df = val_df[existing_columns]
+        val_df = val_df[val_df['aktiv'] == 'ja']
+        val_df = val_df[val_df['pricelist'].str.contains('Preisstaffel', regex=True)]
+        val_df['company'] = '1'
+        val_df['currency'] = 'EUR'
+        val_df['unit'] = 'Stk'
+        val_df['limitValidity'] = '0'
+        val_df['amountFrom[0]'] = '1'
+        val_df['amountFrom[1]'] = '100'
+        val_df['amountFrom[2]'] = '1000'
+        val_df['discountable_idx[0]'] = 'J'
+        val_df['surchargeable_idx[0]'] = 'J'
+        # Process Preisstaffel 1-3
+        staffel_1_3 = val_df[val_df['pricelist'].str.contains('Preisstaffel 1-3', case=False, na=False)].copy()
+        if not staffel_1_3.empty:
+            # For Preisstaffel 1-3, we need 3 price tiers
+            price_cols = ['price[0]', 'price[1]', 'price[2]']
+            for i in range(3):
+                staffel_1_3[price_cols[i]] = ''
+                staffel_1_3[f'discountable_idx[{i}]'] = 'J'
+                staffel_1_3[f'surchargeable_idx[{i}]'] = 'J'
             
-            if suffix_cols:
-                validity_df = validity_df.rename(columns=suffix_cols)
-            
-            # Perform the merge with indicator to check matches
-            merged_df = pd.merge(
-                final_df, 
-                validity_df, 
-                on='aid', 
-                how='left',
-                indicator=True
+            # Assign prices in descending order
+            def convert_price(x):
+                try:
+                    # Try to convert to float, handling both comma and period as decimal separators
+                    if isinstance(x, str):
+                        x = x.replace(',', '.')
+                    return float(x)
+                except (ValueError, TypeError):
+                    return 0.0
+                    
+            prices = staffel_1_3.groupby('aid')['price'].apply(
+                lambda x: x.apply(convert_price).sort_values(ascending=False).head(3).tolist()
             )
             
-            # Drop the merge indicator column
-            merged_df = merged_df.drop('_merge', axis=1)
-            
-            # Ensure valid_from_new is in datetime format and get max value per aid
-            if 'valid_from_new' in merged_df.columns:
-                merged_df['valid_from_new'] = pd.to_datetime(merged_df['valid_from_new'], errors='coerce')
-                # Group by aid and get the max valid_from_new for each aid
-                max_dates = merged_df.groupby('aid')['valid_from_new'].max().reset_index()
-                # Update the original dataframe with the max dates
-                merged_df = merged_df.drop('valid_from_new', axis=1).merge(
-                    max_dates, 
-                    on='aid', 
-                    how='left'
+            # Fill in the prices
+            for i in range(3):
+                staffel_1_3[price_cols[i]] = staffel_1_3['aid'].map(
+                    prices.apply(lambda x: str(x[i]) if i < len(x) else '')
                 )
-                
-                # Replace valid_from with valid_from_new and format as YYYYMMDD
-                if 'valid_from' in merged_df.columns and 'valid_from_new' in merged_df.columns:
-                    # Save original valid_from for reference
-                    merged_df['valid_from_original'] = merged_df['valid_from'].copy()
-                    
-                    # Convert valid_from_new to datetime and format as YYYYMMDD string, keep NaT as empty string
-                    merged_df['valid_from'] = pd.to_datetime(merged_df['valid_from_new'], errors='coerce').dt.strftime('%Y%m%d')
-                    
-                    # Replace 'NaT' with empty string
-                    merged_df['valid_from'] = merged_df['valid_from'].replace('NaT', '')
-                    
-                    # For any empty values, keep the original valid_from value if it exists and is not empty
-                    mask = (merged_df['valid_from'] == '') & (merged_df['valid_from_original'].notna() & 
-                                                           (merged_df['valid_from_original'] != ''))
-                    if 'valid_from_original' in merged_df.columns:
-                        # Format original dates as YYYYMMDD if they exist and are not empty
-                        merged_df.loc[mask, 'valid_from'] = pd.to_datetime(
-                            merged_df.loc[mask, 'valid_from_original'],
-                            errors='coerce'
-                        ).dt.strftime('%Y%m%d').replace('NaT', '')
-                    
-                    # Drop the temporary columns
-                    merged_df = merged_df.drop('valid_from_new', axis=1, errors='ignore')
-                    if 'valid_from_original' in merged_df.columns:
-                        merged_df = merged_df.drop('valid_from_original', axis=1)
-                pass
+        
+        # Process Preisstaffel 2-3
+        staffel_2_3 = val_df[val_df['pricelist'].str.contains('Preisstaffel 2-3', case=False, na=False)].copy()
+        if not staffel_2_3.empty:
+            # For Preisstaffel 2-3, we need 3 price tiers
+            price_cols = ['price[0]', 'price[1]', 'price[2]']
             
-            # Check if we have price data
+            # Initialize all price tiers and their properties
+            for i in range(3):
+                staffel_2_3[price_cols[i]] = ''
+                staffel_2_3[f'discountable_idx[{i}]'] = 'J'
+                staffel_2_3[f'surchargeable_idx[{i}]'] = 'J'
             
-            if all(col in merged_df.columns for col in ['price', 'min_amount', 'pricelist']):
-                
-                merged_df['min_amount'] = pd.to_numeric(merged_df['min_amount'], errors='coerce')
-                merged_df['price'] = pd.to_numeric(merged_df['price'], errors='coerce')
-                
-                original_prices = merged_df[['aid', 'pricelist', 'price[0]']].copy()
-                
-                # Update price[0] for Preisstaffel 1-3 with max price where min_amount=1
-                mask1 = (merged_df['pricelist'] == 'Preisstaffel 1-3') & (merged_df['min_amount'] == 1.0)
-                if mask1.any():
-                    max_price_1 = merged_df[mask1].groupby('aid')['price'].max().reset_index()
-                    max_price_1 = max_price_1.rename(columns={'price': 'new_price'})
-                    
-                    for _, row in max_price_1.iterrows():
-                        aid = row['aid']
-                        new_price = row['new_price']
-                        mask = (merged_df['aid'] == aid) & (merged_df['pricelist'] == 'Preisstaffel 1-3')
-                        merged_df.loc[mask, 'price[0]'] = new_price
-                
-                # Update price[0] for Preisstaffel 2-3 with max price where min_amount=100
-                mask2 = (merged_df['pricelist'] == 'Preisstaffel 2-3') & (merged_df['min_amount'] == 100.0)
-                if mask2.any():
-                    max_price_100 = merged_df[mask2].groupby('aid')['price'].max().reset_index()
-                    max_price_100 = max_price_100.rename(columns={'price': 'new_price'})
-                    
-                    for _, row in max_price_100.iterrows():
-                        aid = row['aid']
-                        new_price = row['new_price']
-                        mask = (merged_df['aid'] == aid) & (merged_df['pricelist'] == 'Preisstaffel 2-3')
-                        merged_df.loc[mask, 'price[0]'] = new_price
-                
-                # Update price[1] with values where min_amount=100
-                mask_100 = (merged_df['min_amount'] == 100.0)
-                if mask_100.any():
-                    price_100 = merged_df[mask_100].groupby('aid')['price'].first().reset_index()
-                    price_100 = price_100.rename(columns={'price': 'price_for_100'})
-                    
-                    merged_df = merged_df.merge(price_100, on='aid', how='left')
-                    merged_df['price[1]'] = merged_df['price_for_100']
-                    merged_df = merged_df.drop('price_for_100', axis=1)
-                
-                # Update price[2] with values where min_amount=1000
-                mask_1000 = (merged_df['min_amount'] == 1000.0)
-                if mask_1000.any():
-                    price_1000 = merged_df[mask_1000].groupby('aid')['price'].first().reset_index()
-                    price_1000 = price_1000.rename(columns={'price': 'price_for_1000'})
-                    
-                    merged_df = merged_df.merge(price_1000, on='aid', how='left')
-                    merged_df['price[2]'] = merged_df['price_for_1000']
-                    merged_df = merged_df.drop('price_for_1000', axis=1)
-                
-                # Format price columns with comma as decimal separator
-                for col in ['price[0]', 'price[1]', 'price[2]']:
-                    if col in merged_df.columns:
-                        merged_df[col] = merged_df[col].astype(str).str.replace('\.', ',', regex=True)
-                
-                # Remove temporary columns
-                columns_to_drop = ['price', 'min_amount']
-                columns_to_drop = [col for col in columns_to_drop if col in merged_df.columns]
-                if columns_to_drop:
-                    merged_df = merged_df.drop(columns=columns_to_drop)
-            else:
-                pass
+            # Get all prices for each aid and sort them in descending order
+            prices = staffel_2_3.groupby('aid')['price'].apply(
+                lambda x: x.apply(convert_price).sort_values(ascending=False).tolist()
+            )
             
-            # Remove duplicates based on 'aid' and 'pricelist', keeping the first occurrence
-            if 'aid' in merged_df.columns and 'pricelist' in merged_df.columns:
-                merged_df = merged_df.drop_duplicates(subset=['aid', 'pricelist'], keep='first')
-            #add valid_to
-            now = datetime.now()
-            merged_df['valid_to'] = now.strftime('%Y%m%d')
+            # Fill in the prices for all three tiers
+            for i in range(3):
+                staffel_2_3[price_cols[i]] = staffel_2_3['aid'].map(
+                    prices.apply(lambda x: str(x[i]) if i < len(x) else (str(x[-1]) if x else ''))
+                )
+        
+        # Combine both staffels
+        val_df = pd.concat([staffel_1_3, staffel_2_3], ignore_index=True)
+        
+        # Create a clean aid without _obsolet suffix for better duplicate detection
+        val_df['clean_aid'] = val_df['aid'].str.replace('_obsolet', '')
+        
+        # Sort by aid and pricelist to ensure consistent duplicate removal
+        val_df = val_df.sort_values(['clean_aid', 'pricelist'])
+        
+        # Remove duplicate rows based on clean_aid and pricelist
+        # Prefer non-obsolet versions by keeping the last occurrence
+        val_df = val_df.drop_duplicates(subset=['clean_aid', 'pricelist'], keep='last')
+        
+        # Remove the temporary clean_aid column
+        val_df = val_df.drop(columns=['clean_aid'])
+        
+        # Remove unnecessary columns
+        columns_to_drop = ['price', 'min_amount', 'aktiv']
+        for col in columns_to_drop:
+            if col in val_df.columns:
+                val_df = val_df.drop(columns=[col])
+        
+        # Ensure all required columns exist
+        for i in range(3):
+            if f'price[{i}]' not in val_df.columns:
+                val_df[f'price[{i}]'] = ''
+            if f'discountable_idx[{i}]' not in val_df.columns:
+                val_df[f'discountable_idx[{i}]'] = ''
+            if f'surchargeable_idx[{i}]' not in val_df.columns:
+                val_df[f'surchargeable_idx[{i}]'] = ''
+        
+        # Format valid_from to YYYYMMDD
+        try:
+            val_df['valid_from'] = pd.to_datetime(val_df.get('valid_from', datetime.now())).dt.strftime('%Y%m%d')
+        except:
+            val_df['valid_from'] = datetime.now().strftime('%Y%m%d')
             
-            # Export merged dataframe to CSV
-            merged_output_file = OUTPUT_DIR / "PRICELIST_pricestaffeln_validity.csv"
-            merged_df.to_csv(merged_output_file, index=False, encoding='utf-8-sig', sep=';')
-            print(f"Price data with validity exported successfully to: {merged_output_file}")
+        # Add valid_to as yesterday's date
+        val_df['valid_to'] = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
+
+        # Define the desired column order
+        base_columns = [
+            'aid', 'company', 'pricelist',  # Basic information
+            'valid_from', 'valid_to',       # Validity dates
+            'currency', 'unit',             # Currency and unit
+            'limitValidity'                 # Other flags
+        ]
+        
+        # Add price tier columns in order: price[0], amountFrom[0], discountable_idx[0], surchargeable_idx[0], etc.
+        price_tiers = []
+        for i in range(3):
+            price_tiers.extend([
+                f'price[{i}]',
+                f'amountFrom[{i}]',
+                f'discountable_idx[{i}]',
+                f'surchargeable_idx[{i}]'
+            ])
+        
+        # Combine all columns and keep only those that exist in the dataframe
+        all_columns = base_columns + price_tiers
+        final_columns = [col for col in all_columns if col in val_df.columns]
+        
+        # Ensure 'aktiv' column is not included
+        val_df = val_df[final_columns]
+        
+        # Double check and remove 'aktiv' column if it still exists
+        if 'aktiv' in val_df.columns:
+            val_df = val_df.drop(columns=['aktiv'])
+        
+        # Export merged dataframe to CSV
+        validity_output = OUTPUT_DIR / "PRICELIST_pricestaffeln_validity.csv"
+        val_df.to_csv(validity_output, index=False, encoding='utf-8-sig', sep=';')
+        print(f"Preisstafeln_validity exported successfully to: {validity_output}")
+        
+        # Also reorder and export the main price data file
+        if 'price' in globals() and 'main_price_output' in globals():
+            main_price_columns = [
+                'aid', 'company', 'currency', 'unit', 'pricelist',
+                'valid_from', 'limitValidity'
+            ] + price_tiers
+            main_price_columns = [col for col in main_price_columns if col in price.columns]
+            price = price[main_price_columns]
+            price.to_csv(main_price_output, index=False, encoding='utf-8-sig', sep=';')
+            print(f"Main price data exported successfully to: {main_price_output}")
 
     except Exception as e:
         print(f"Error in import_artikel_pricestaffeln: {str(e)}")
@@ -1084,11 +1440,12 @@ def import_artikel_preisstufe_3_7():
             'Menge_bis': 'quantity_to'
         })
         
-        # Pivot the data to get price tiers as columns
-        df_pivot = df.pivot(
+        # Pivot the data to get price tiers as columns using pivot_table to handle duplicates
+        df_pivot = df.pivot_table(
             index='aid',
             columns='Staffel',
-            values='price'
+            values='price',
+            aggfunc='first'  # Keep the first price if there are duplicates
         ).reset_index()
         
         # Rename columns for clarity
@@ -1100,22 +1457,23 @@ def import_artikel_preisstufe_3_7():
             7: 'price_7'
         })
         
-        # Get unique article IDs and ensure we have exactly one row per article
-        df_pivot = df_pivot.drop_duplicates(subset=['aid'], keep='first')
-        
         # Create final dataframe with required structure
         result = []
         pricelists = ['Preisstufe 3', 'Preisstufe 4', 'Preisstufe 5', 'Preisstufe 6', 'Preisstufe 7']
         
-        # Create two rows for each article (one for each pricelist)
+        # Create one row per article per price level, but only if the price exists
         for _, row in df_pivot.iterrows():
             for pricelist in pricelists:
-                row_dict = row.to_dict()
-                row_dict['pricelist'] = pricelist
-                result.append(row_dict)
+                price_level = int(pricelist.split()[-1])
+                price_col = f'price_{price_level}'
+                
+                # Only add if price exists for this level
+                if pd.notna(row.get(price_col)) and row.get(price_col) != '':
+                    row_dict = row.to_dict()
+                    row_dict['pricelist'] = pricelist
+                    result.append(row_dict)
         
         final_df = pd.DataFrame(result)
-        print(final_df)
         
         # Add required columns
         final_df['company'] = '1'
@@ -1150,274 +1508,68 @@ def import_artikel_preisstufe_3_7():
         ]
         final_df = final_df[columns]
         
-        # Save to CSV with proper encoding
+        # Save to CSV with proper encoding and decimal comma
         output_file = OUTPUT_DIR / "PRICELIST- Artikel-Preisstufe_3_7.csv"
         final_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
         
-        print(f"Price data exported successfully to: {output_file}")
-        #create validity file
+        # Ensure price column is treated as string with comma decimal separator
+        if 'price' in final_df.columns:
+            final_df['price'] = final_df['price'].astype(str).str.replace('.', ',', regex=False)
+        
+        print(f"Preisstufe_3_7 exported successfully to: {output_file}")
+        #create validity data
         valid_path = Path("C:/Users/gia.luongdo/Python/importer_artikel_project/data/Price_ERP.csv")
         if not valid_path.exists():
             print(f"Warning: Validity file not found at {valid_path}")
             return output_file if output_file.exists() else None
             
-        # Read CSV with original column names first to check
-        validity_df = pd.read_csv(valid_path, sep=';', header=0, dtype=str)
-        
-        # Print original column names for debugging
-        print("Original validity_df columns:", validity_df.columns.tolist())
-        
-        # Normalize column names (strip and lowercase)
-        column_mapping = {col: str(col).strip().lower() for col in validity_df.columns}
-        validity_df = validity_df.rename(columns=column_mapping)
-        
-        # Handle case where 'aid' might be 'AID' in the original file
-        if 'aid' not in validity_df.columns and 'AID'.lower() in [k.lower() for k in column_mapping.keys()]:
-            aid_col = [k for k in column_mapping.keys() if k.lower() == 'aid'][0]
-            validity_df = validity_df.rename(columns={aid_col: 'aid'})
-        
-        # Define and select required columns
-        required_columns = ['aid', 'valid_from', 'price', 'min_amount']
-        existing_columns = [col for col in required_columns if col in validity_df.columns]
-        
-        # Warn about any missing columns
-        missing_columns = set(required_columns) - set(existing_columns)
-        if missing_columns:
-            print(f"Warning: Missing columns in validity file: {', '.join(missing_columns)}")
-        
-        # Select only the existing required columns
-        validity_df = validity_df[existing_columns].copy()
-        
-        # Clean up aid by removing _obsolet suffix
-        validity_df['aid'] = validity_df['aid'].str.replace('_obsolet', '', regex=False)
-        
-        # Add suffix to avoid column name conflicts
-        validity_df = validity_df.rename(columns={
-            'valid_from': 'valid_from_new',
-            'price': 'price_new',
-            'min_amount': 'min_amount_new'
-        })
-        
-        print("\nValidity data sample:")
-        print(validity_df.head())
-        
-        # Debug: Print columns and sample aids before merge
-        print("\n=== DEBUG VALIDITY_DF BEFORE MERGE ===")
-        print("validity_df shape:", validity_df.shape)
-        print("validity_df columns:", validity_df.columns.tolist())
-        print("validity_df sample aids (first 5):")
-        for aid in validity_df['aid'].head().tolist():
-            print(f"  - {aid} (type: {type(aid)})")
-        
-        # Check for any missing values in 'aid' column
-        print("\nMissing values in validity_df['aid']:", validity_df['aid'].isna().sum())
-        
-        # Check for any duplicate aids
-        print("Number of duplicate aids in validity_df:", validity_df['aid'].duplicated().sum())
-        
-        # Check sample data from final_df
-        print("\n=== FINAL_DF SAMPLE ===")
-        print("final_df shape:", final_df.shape)
-        print("final_df sample aids (first 5):")
-        for aid in final_df['aid'].head().tolist():
-            print(f"  - {aid} (type: {type(aid)})")
-        
-        # Check for any common aids between the two dataframes
-        common_aids = set(validity_df['aid'].dropna()).intersection(set(final_df['aid']))
-        print("\nNumber of common aids:", len(common_aids))
-        if common_aids:
-            print("Sample of common aids:", list(common_aids)[:5])
-        
-        print("===================================\n")
-        
-        # Check for any matching aids
-        common_aids = set(final_df['aid']).intersection(set(validity_df['aid']))
-        print(f"Found {len(common_aids)} common aids between dataframes")
-        if common_aids:
-            print("Sample of common aids:", list(common_aids)[:5])
-        
-        print("\nPreparing to merge dataframes...")
-        
-        # First, remove duplicates in validity_df by keeping the first occurrence
-        print("Removing duplicates in validity_df...")
-        validity_df_deduped = validity_df.drop_duplicates(subset=['aid'], keep='first')
-        print(f"Reduced from {len(validity_df)} to {len(validity_df_deduped)} rows after deduplication")
-        
-        # Now perform the merge
-        print("Merging dataframes...")
-        merged_df = pd.merge(
-            final_df,
-            validity_df_deduped,
-            on='aid',
-            how='left'  # Keep all rows from final_df, add matching rows from validity_df
-        )
-        
-        # Check merge results
-        print("\n=== MERGE RESULTS ===")
-        matched = merged_df['valid_from_new'].notna().sum()
-        print(f"Rows with matches from validity_df: {matched}/{len(merged_df)} ({(matched/len(merged_df)*100):.1f}%)")
-        
-        # Debug: Print columns after merge
-        print("\nColumns in merged_df:", merged_df.columns.tolist())
-        
-        # Show sample of non-merged rows (where valid_from_new is NA)
-        print("\nSample of non-merged rows (no match in validity_df):")
-        print(merged_df[merged_df['valid_from_new'].isna()].head())
-        
-        # Show sample of successfully merged rows
-        if 'valid_from_new' in merged_df.columns:
-            merged_rows = merged_df[merged_df['valid_from_new'].notna()]
-            if not merged_rows.empty:
-                print("\nSample of successfully merged rows:")
-                print(merged_rows.head())
-            else:
-                print("\nNo rows were successfully merged. Check if AIDs match between files.")
-        else:
-            print("\n'valid_from_new' column not found in merged data")
-        
-        # Format the columns from validity_df
-        if 'valid_from_new' in merged_df.columns:
-            # Convert valid_from_new to datetime
-            merged_df['valid_from_new_dt'] = pd.to_datetime(merged_df['valid_from_new'], errors='coerce')
+        val_df = pd.read_csv(valid_path, sep=';', header=0, dtype=str)
+        val_df.columns = [col.lower() for col in val_df.columns]
+        # Rename 'data' column to 'pricelist' if it exists
+        if 'data' in val_df.columns:
+            val_df = val_df.rename(columns={'data': 'pricelist'})
             
-            # Get min and max dates directly from the validity_df to ensure we have all dates
-            validity_dates = validity_df[['aid', 'valid_from_new']].copy()
-            validity_dates['valid_from_new'] = pd.to_datetime(validity_dates['valid_from_new'], errors='coerce')
-            
-            # Get min and max dates for each aid from the original validity data
-            min_dates = validity_dates.groupby('aid')['valid_from_new'].min().reset_index()
-            max_dates = validity_dates.groupby('aid')['valid_from_new'].max().reset_index()
-            
-            # Rename columns for clarity
-            min_dates = min_dates.rename(columns={'valid_from_new': 'min_date'})
-            max_dates = max_dates.rename(columns={'valid_from_new': 'max_date'})
-            
-            # Get unique prices for each AID and sort them in ascending order
-            price_mapping = validity_df[['aid', 'price_new']].copy()
-            price_mapping['price_new'] = pd.to_numeric(price_mapping['price_new'], errors='coerce')
-            price_mapping = price_mapping.dropna(subset=['price_new'])
-            
-            # For each AID, get all available prices and sort them in ascending order
-            aid_prices = price_mapping.groupby('aid')['price_new'].apply(lambda x: sorted(list(set(x))))  # Sort in ascending order
-            
-            # Assign prices to pricelists for each AID
-            def assign_prices(group):
-                aid = group['aid'].iloc[0]
-                if aid in aid_prices:
-                    prices = aid_prices[aid]
-                    # Create a mapping of pricelist to price index
-                    pricelist_order = [
-                        'Preisstufe 7',  # Gets the first (lowest) price
-                        'Preisstufe 6',
-                        'Preisstufe 5',
-                        'Preisstufe 4',
-                        'Preisstufe 3'   # Gets the last (highest) price if enough prices exist
-                    ]
-                    
-                    # Create price dictionary
-                    price_dict = {}
-                    for i, pricelist in enumerate(pricelist_order):
-                        if i < len(prices):
-                            price_dict[pricelist] = prices[i]
-                        elif prices:  # If we run out of prices, use the last available price
-                            price_dict[pricelist] = prices[-1]
-                        else:
-                            price_dict[pricelist] = None
-                    
-                    # Apply prices to each pricelist
-                    for pricelist, price in price_dict.items():
-                        mask = (group['pricelist'] == pricelist)
-                        group.loc[mask, 'price_new'] = price
-                        
-                return group
-            
-            # Apply price assignment for each AID
-            merged_df = merged_df.groupby('aid', group_keys=False).apply(assign_prices)
-            
-            # Update price column with the new prices
-            merged_df['price'] = merged_df['price_new'].astype(str).str.replace('\.', ',', regex=True)
-            
-            # Merge with the main dataframe
-            merged_df = pd.merge(merged_df, min_dates, on='aid', how='left')
-            merged_df = pd.merge(merged_df, max_dates, on='aid', how='left')
-            
-            # For Preisstufe 3-6, use max valid_from
-            mask_p3_to_p6 = merged_df['pricelist'].isin(['Preisstufe 3', 'Preisstufe 4', 'Preisstufe 5', 'Preisstufe 6'])
-            # For Preisstufe 7, use min valid_from
-            mask_p7 = merged_df['pricelist'] == 'Preisstufe 7'
-            
-            # Debug: Show min and max dates for sample AID
-            sample_aid = '1050-black-4XL'
-            if sample_aid in merged_df['aid'].values:
-                sample_min = merged_df[merged_df['aid'] == sample_aid]['min_date'].iloc[0]
-                sample_max = merged_df[merged_df['aid'] == sample_aid]['max_date'].iloc[0]
-                print(f"\nDebug for {sample_aid}:")
-                print(f"Min date: {sample_min} (type: {type(sample_min)})")
-                print(f"Max date: {sample_max} (type: {type(sample_max)})")
-                print("\nSample of validity data for this AID:")
-                print(validity_df[validity_df['aid'] == sample_aid][['valid_from_new', 'price_new', 'min_amount_new']].head().to_string())
-                
-                # Debug: Show the actual values being used
-                print("\nDebug - Values being used:")
-                print(f"For Preisstufe 3-6: {sample_max}")
-                print(f"For Preisstufe 7: {sample_min}")
-            
-            # Apply the appropriate valid_from based on pricelist
-            merged_df.loc[mask_p3_to_p6, 'valid_from'] = merged_df.loc[mask_p3_to_p6, 'max_date'].dt.strftime('%Y%m%d')
-            merged_df.loc[mask_p7, 'valid_from'] = merged_df.loc[mask_p7, 'min_date'].dt.strftime('%Y%m%d')
-            
-            # Clean up temporary columns
-            columns_to_drop = ['valid_from_new_dt', 'min_date', 'max_date', 'valid_from_new', 'price_new']
-            columns_to_drop = [col for col in columns_to_drop if col in merged_df.columns]
-            merged_df = merged_df.drop(columns=columns_to_drop)
-            
-            # Keep original valid_from if new one is not available (for non-matching pricelists)
-            if 'valid_from' in merged_df.columns and 'valid_from_new' in merged_df.columns:
-                merged_df['valid_from'] = merged_df['valid_from'].fillna(merged_df['valid_from_new'])
+        # Define required columns, excluding 'min_amount'
+        required_columns = ['aid', 'pricelist', 'price', 'valid_from', 'aktiv']
+        existing_columns = [col for col in required_columns if col in val_df.columns]
+        val_df = val_df[existing_columns]
         
-        # Format min_amount_new: convert to int if whole number, otherwise float with 2 decimals
-        if 'min_amount_new' in merged_df.columns:
-            # First convert to numeric, handling any non-numeric values
-            merged_df['min_amount_new'] = pd.to_numeric(merged_df['min_amount_new'], errors='coerce')
+        # Filter out rows where aid contains '_obsolet'
+        if 'aid' in val_df.columns:
+            val_df = val_df[~val_df['aid'].str.contains('_obsolet', case=False, na=False)]
             
-            # Format as integer if whole number, otherwise as float with 2 decimals
-            def format_min_amount(x):
-                if pd.isna(x):
-                    return ''
-                if x.is_integer():
-                    return str(int(x))
-                return f"{x:.2f}".replace('.', ',')
-                
-            merged_df['min_amount_new'] = merged_df['min_amount_new'].apply(format_min_amount)
+        val_df = val_df[val_df['aktiv'] == 'ja']
+        val_df = val_df[val_df['pricelist'].str.contains('Preisstufe', regex=True, na=False)]
         
-        # Add valid_to column with current date
-        now = datetime.now()
-        merged_df['valid_to'] = now.strftime('%Y%m%d')
+        # Replace dots with commas in the price column
+        if 'price' in val_df.columns:
+            val_df['price'] = val_df['price'].astype(str).str.replace('.', ',', regex=False)
+            
+        val_df['discountable_idx'] = 'J'
+        val_df['surchargeable_idx'] = 'J'
+        val_df['amountFrom'] = '1'
+        val_df['limitValidity'] = '0'
+        val_df['company'] = '1'
+        val_df['currency'] = 'EUR'
+        val_df['unit'] = 'Stk'
+        val_df['valid_to'] = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
+        val_df['valid_from'] = val_df['valid_from'].apply(lambda x: pd.to_datetime(x).strftime('%Y%m%d'))
+    
+        # Ensure 'aktiv' column is removed before export
+        if 'aktiv' in val_df.columns:
+            val_df = val_df.drop(columns=['aktiv'])
+            
+        # Export merged dataframe to CSV with unique name
+        validity_output = OUTPUT_DIR / "PRICELIST_preisstufe3_7_validity.csv"
+        val_df.to_csv(validity_output, index=False, encoding='utf-8-sig', sep=';')
+        print(f"Preisstufe_3_7_validity exported successfully to: {validity_output}")
         
-        # Reorder columns to maintain consistency
-        columns = [
-            'aid', 'company', 'price', 'price_new', 'currency', 'unit', 'pricelist', 
-            'valid_from', 'valid_from_new', 'valid_to', 'min_amount_new',
-            'limitValidity', 'amountFrom', 'discountable_idx', 'surchargeable_idx'
-        ]
-        # Only include columns that exist in the dataframe
-        merged_df = merged_df[[col for col in columns if col in merged_df.columns]]
-        
-        # Export merged dataframe to CSV
-        merged_output_file = OUTPUT_DIR / "PRICELIST - Preisstufe_validity.csv"
-        merged_df.to_csv(merged_output_file, index=False, encoding='utf-8-sig', sep=';')
-        print(f"\nMerged data sample:")
-        print(merged_df.head())
-        print(f"\nPrice data with validity exported successfully to: {merged_output_file}")
-        print(f"Total rows in merged data: {len(merged_df)}")
-        
-        return output_file if output_file.exists() else None
     except Exception as e:
         print(f"Error in import_artikel_preisstufe_3_7: {str(e)}")
         import traceback
         traceback.print_exc()
         return None
-        raise
+        
 def import_artikel_basicprice(basicprice_filename="PRICELIST - Artikel-Basispreis.csv", validity_filename="Basispreis_validity_data.csv"):
     """Import and process basic price information for articles.
     
@@ -1431,29 +1583,24 @@ def import_artikel_basicprice(basicprice_filename="PRICELIST - Artikel-Basisprei
     try:
         sql_file = Path(__file__).parent.parent / 'sql' / 'get_article_price.sql'
         if not sql_file.exists():
-            print(f"Error: SQL file not found at {sql_file}")
             return None
             
         with open(sql_file, 'r', encoding='utf-8') as f:
             sql_query = f.read().strip()
             
         if not sql_query:
-            print("Error: SQL query is empty")
             return None
         
         result = execute_query(sql_query)
         if result is None:
-            print("Error: No data returned from database")
             return None
             
         df = pd.DataFrame(result)
         if df.empty:
-            print("Warning: No data returned from the query")
             return None
             
         price_column = 'Preis' if 'Preis' in df.columns else None
         if price_column is None:
-            print("Error: Could not find price column in the result")
             return None
             
         # Process the data
@@ -1472,143 +1619,71 @@ def import_artikel_basicprice(basicprice_filename="PRICELIST - Artikel-Basisprei
         df['limitValidity'] = '0'
         df['discountable'] = 'J'
         df['surchargeable'] = 'J'
+        df['unit'] = 'Stk'
+        df['use_default_sales_unit'] = 1
         
         id_column = 'ArtikelCode'
         if id_column not in df.columns:
-            print("Error: Could not find 'ArtikelCode' column")
             return None
+        
             
         df['aid'] = df[id_column].astype(str).str.strip()
         
         # Remove duplicate AIDs by keeping the first occurrence
         df = df.drop_duplicates(subset=['aid'], keep='first')
         
-        output_columns = ['aid', 'company', 'basicPrice', 'currency', 'valid_from', 'limitValidity', 'discountable', 'surchargeable']
+        output_columns = ['aid', 'company', 'basicPrice', 'currency', 'valid_from', 'limitValidity', 'discountable', 'surchargeable', 'unit', 'use_default_sales_unit']
         final_df = df[output_columns].copy()
         
         output_file = OUTPUT_DIR / basicprice_filename
         output_file.parent.mkdir(parents=True, exist_ok=True)
         final_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
-        print(f"✅ Exported {len(final_df)} price records to: {output_file}")
+        print(f"Exported {len(final_df)} basic price records")
 
-        # Process and export validity data
+        #create validity data
         valid_path = Path("C:/Users/gia.luongdo/Python/importer_artikel_project/data/Price_ERP.csv")
         if not valid_path.exists():
             print(f"Warning: Validity file not found at {valid_path}")
             return output_file if output_file.exists() else None
             
-        try:
-            # Read and process validity data
-            validity_df = pd.read_csv(valid_path, sep=';', header=0, dtype=str)
+        val_df = pd.read_csv(valid_path, sep=';', header=0, dtype=str)
+        val_df.columns = [col.lower() for col in val_df.columns]
+        # Rename 'data' column to 'pricelist' if it exists
+        if 'data' in val_df.columns:
+            val_df = val_df.rename(columns={'data': 'pricelist', 'price': 'basicPrice'})
             
-            # Normalize column names (strip whitespace and convert to lowercase)
-            validity_df.columns = [col.strip().lower() for col in validity_df.columns]
-            
-            # Check for required columns
-            if 'aid' not in validity_df.columns or 'valid_from' not in validity_df.columns:
-                print("Warning: Required columns not found in validity file")
-                return output_file
-                
-            # Clean up AID values (remove _obsolet suffix if present)
-            validity_df['aid'] = validity_df['aid'].astype(str).str.replace('_obsolet', '').str.strip()
-            
-            # Convert price to numeric for comparison
-            if 'price' in validity_df.columns:
-                validity_df['price'] = pd.to_numeric(validity_df['price'].astype(str).str.replace(',', '.'), errors='coerce')
-            
-            # Convert min_amount to numeric for comparison
-            if 'min_amount' in validity_df.columns:
-                validity_df['min_amount'] = pd.to_numeric(validity_df['min_amount'].astype(str).str.replace(',', '.'), errors='coerce')
-            
-            # Filter rows where min_amount = 1
-            if 'min_amount' in validity_df.columns:
-                validity_df = validity_df[validity_df['min_amount'] == 1]
-            
-            # For each AID, keep only the row with the highest price
-            if 'price' in validity_df.columns and not validity_df.empty:
-                validity_df = validity_df.loc[validity_df.groupby('aid')['price'].idxmax()].copy()
-            
-            # Select and rename columns to match target format
-            validity_columns = {
-                'aid': 'aid',
-                'valid_from': 'valid_from',
-                'price': 'price',
-                'min_amount': 'min_amount'
-            }
-            
-            # Only keep columns that exist in the source data
-            validity_columns = {k: v for k, v in validity_columns.items() if k in validity_df.columns}
-            validity_df = validity_df[list(validity_columns.keys())].rename(columns=validity_columns)
-            
-            # Add _new suffix to all columns from validity_df except 'aid'
-            validity_df_renamed = validity_df.rename(columns={col: f"{col}_new" for col in validity_df.columns if col != 'aid'})
-            
-            # Merge with final_df on 'aid' and store in merged_df
-            merged_df = pd.merge(
-                final_df,
-                validity_df_renamed,
-                on='aid',
-                how='left'
-            )
-            
-            # Update merged_df with the requested changes
-            if 'valid_from_new' in merged_df.columns:
-                # Format valid_from_new as YYYYMMDD and replace valid_from
-                merged_df['valid_from'] = pd.to_datetime(merged_df['valid_from_new']).dt.strftime('%Y%m%d')
-            
-            # Remove min_amount_new column if it exists
-            if 'min_amount_new' in merged_df.columns:
-                merged_df = merged_df.drop(columns=['min_amount_new'])
-            
-            # Update basicPrice with price_new if it exists and then remove the price_new column
-            if 'price_new' in merged_df.columns:
-                merged_df['basicPrice'] = merged_df['price_new'].fillna('')
-                merged_df = merged_df.drop(columns=['price_new'])
-            
-            # Remove valid_from_new column if it exists
-            if 'valid_from_new' in merged_df.columns:
-                merged_df = merged_df.drop(columns=['valid_from_new'])
-            
-            # Add valid_to column with today's date in YYYYMMDD format
-            merged_df['valid_to'] = datetime.now().strftime('%Y%m%d')
-            
-            # Save the updated merged_df
-            merged_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
-            print(f"✅ Updated basic price data with validity information: {output_file}")
-            
-            # Export the merged data for reference
-            merged_output = OUTPUT_DIR / 'PRICELIST - Basicprice_validity.csv'
-            merged_df.to_csv(merged_output, index=False, encoding='utf-8-sig', sep=';')
-            print(f"✅ Exported merged data to: {merged_output}")
-            
-        except Exception as e:
-            print(f"Error processing validity data: {e}")
-            import traceback
-            traceback.print_exc()
+        # Define required columns, excluding 'min_amount'
+        required_columns = ['aid', 'pricelist', 'basicPrice', 'valid_from', 'aktiv']
+        existing_columns = [col for col in required_columns if col in val_df.columns]
+        val_df = val_df[existing_columns]
         
-        # Process and export Price_Basic_ERP.csv to Price_Basic.csv
-        try:
-            price_basic_file = r"C:\Users\gia.luongdo\Python\importer_artikel_project\data\Price_Basic_ERP.csv"
-            price_basic_df = pd.read_csv(price_basic_file, encoding='utf-8-sig', sep=';').rename(columns=lambda x: x.lower() if x != x.lower() else x)
-            price_basic_df['valid_to'] = datetime.now().strftime("%Y%m%d")
-            price_basic_df['valid_from'] = datetime.now().strftime("%Y%m%d")
-            price_basic_df['currency'] = 'EUR'
-            price_basic_df['limitValidity'] = '0'
-            price_basic_df['discountable'] = 'J'
-            price_basic_df['surchargeable'] = 'J'
-
-            output_path = r"C:\Users\gia.luongdo\Python\importer_artikel_project\data\Price_Basic_validity.csv"
-            price_basic_df.to_csv(output_path, index=False, encoding='utf-8-sig', sep=';')
-            print(f"✅ Exported Price_Basic.csv to: {output_path}")
+        # Filter out rows where aid contains '_obsolet'
+        if 'aid' in val_df.columns:
+            val_df = val_df[~val_df['aid'].str.contains('_obsolet', case=False, na=False)]
             
-        except Exception as e:
-            print(f"Warning: Could not process Price_Basic_ERP.csv - {str(e)}")
+        val_df = val_df[val_df['aktiv'] == 'ja']
+        val_df = val_df[val_df['pricelist'].str.contains('Private_', regex=True, na=False)]
         
-        return str(output_file)
-        
+        # Replace dots with commas in the price column
+        if 'basicPrice' in val_df.columns:
+            val_df['basicPrice'] = val_df['basicPrice'].astype(str).str.replace('.', ',', regex=False)
+            
+        val_df['discountable'] = 'J'
+        val_df['surchargeable'] = 'J'
+        val_df['limitValidity'] = '0'
+        val_df['company'] = '1'
+        val_df['currency'] = 'EUR'
+        val_df['unit'] = 'Stk'
+        val_df['use_default_sales_unit'] = 1
+        val_df['valid_to'] = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
+        val_df['valid_from'] = val_df['valid_from'].apply(lambda x: pd.to_datetime(x).strftime('%Y%m%d'))
+        val_df = val_df.drop(['aktiv', 'pricelist'], axis=1)
 
 
 
+        # Export merged dataframe to CSV
+        validity_output = OUTPUT_DIR / "PRICELIST_basicprice_validity.csv"
+        val_df.to_csv(validity_output, index=False, encoding='utf-8-sig', sep=';')
     except Exception as e:
         print(f"Error in import_artikel_basicprice: {e}")
         import traceback
@@ -1617,40 +1692,31 @@ def import_artikel_basicprice(basicprice_filename="PRICELIST - Artikel-Basisprei
 
 def import_sku_EAN():
     try:
-        if not diff_EAN:
-            return None
-            
-        ean_list = [str(ean).strip() for ean in diff_EAN if str(ean).strip().isdigit()]
-        if not ean_list:
-            return None
+        # Make run_comparison_standalone import optional
+        try:
+            from run_comparison_standalone import diff, diff1
+        except (ImportError, FileNotFoundError):
+            diff = None
+            diff1 = None
 
+        # Read the SQL query
         with open(Path(__file__).parent.parent / 'sql' / 'get_EAN.sql', 'r', encoding='utf-8') as f:
-            sql_template = f.read()
+            sql_query = f.read()
+            df = pd.DataFrame(execute_query(sql_query))
 
-        batch_size = 100
-        all_dfs = []
-        
-        for i in range(0, len(ean_list), batch_size):
-            batch = ean_list[i:i + batch_size]
-            placeholders = ','.join(['?'] * len(batch))
-            sql_query = sql_template.replace('{aid_placeholders}', placeholders)
-            
-            try:
-                batch_df = pd.DataFrame(execute_query(sql_query, params=tuple(batch)))
-                if not batch_df.empty:
-                    all_dfs.append(batch_df)
-            except Exception as e:
-                continue
-        
-        if not all_dfs:
+        if df.empty:
+            print("No EAN data found in the database")
             return None
             
-        df = pd.concat(all_dfs, ignore_index=True)
-        df['QtyId'] = pd.to_numeric(df['QtyId'], errors='coerce').fillna(0).astype(int)
+        # Process the data
+        df['QtyId'] = pd.to_numeric(df['QtyId'], errors='coerce').astype(int)
         df['Verpackungseinheit'] = df['Verpackungseinheit'].astype(str)
+        df['IsEndsWithS'] = df['IsEndsWithS'].astype(int)
+        # Set default unit to 'Stk' for QtyId = 1
         df.loc[df['QtyId'] == 1, 'Verpackungseinheit'] = 'Stk'
+        df.loc[df['IsEndsWithS'] == 1, 'Verpackungseinheit'] = 'SP'
         
-        # Then apply other mappings only for QtyId != 1
+        # Apply mappings for other QtyId values
         mask = df['QtyId'] != 1
         df.loc[mask, 'Verpackungseinheit'] = df.loc[mask, 'Verpackungseinheit'].replace({
             '1': 'Stk',
@@ -1658,124 +1724,173 @@ def import_sku_EAN():
             '10': '10er'
         })
         
-        # Add required columns
-        df['aid'] = df['ArtikelCode']
-        df['company'] = 0
-        df['EAN'] = df['EAN13'].astype(str)  # Changed from 'EAN' to 'EAN13'
-        df['numbertype'] = '2'
-        df['valid_from'] = datetime.now().strftime("%Y%m%d")
-        df['unit'] = df['Verpackungseinheit']
-        df['purpose'] = '1'
-
-        #Reorder columns
-        columns = [
-            'aid', 'company', 'EAN', 'numbertype', 'valid_from', 'unit', 'purpose'
-        ]
-        df = df[columns]
+        # Prepare output DataFrame with required columns
+        from datetime import datetime, timedelta
+        result_df = pd.DataFrame({
+            'aid': df['ArtikelCode'],
+            'company': 0,
+            'EAN': df['EAN13'].astype(str),
+            'numbertype': '2',
+            'valid_from': datetime.now().strftime("%Y%m%d"),
+            #'valid_to': (datetime.now() - timedelta(days=1)).strftime("%Y%m%d"),
+            'unit': df['Verpackungseinheit'],
+            'purpose': '1'
+        })
         
-        # Save to CSV with proper encoding
+        # Ensure output directory exists
         output_file = OUTPUT_DIR / "article_ean.csv"
-        df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Export to CSV with proper encoding
+        result_df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
         
         print(f"EAN data exported successfully to: {output_file}")
+        print(f"Total records exported: {len(result_df)}")
         
         return output_file if output_file.exists() else None
+        
     except Exception as e:
-        print(f"Error in import_artikel_ean: {str(e)}")
+        print(f"Error in import_sku_EAN: {str(e)}")
         import traceback
         traceback.print_exc()
         return None
-        raise
+
+# Removed duplicate import_sku_basis function
+
 def import_sku_gebinde():
+    """Import SKU packaging data (Gebinde) from database.
+    
+    Returns:
+        Path: Path to the generated CSV file, or None if an error occurred
+    """
     try:
-        from run_comparison_standalone import diff
-        
-        if not diff:
-            raise ValueError("No AIDs found")
+        # Make diff optional
+        try:
+            from run_comparison_standalone import diff
+            if not diff:
+                diff = None
+        except (ImportError, NameError, FileNotFoundError):
+            diff = None
             
-        sql_query = read_sql_query("get_sku_gebinde.sql", diff)
+        # Read the SQL query from file
+        with open(Path(__file__).parent.parent / 'sql' / 'get_sku_gebinde.sql', 'r', encoding='utf-8') as f:
+            sql_query = f.read()
+            
+        # If we have diff, use it to filter the query
+        if diff is not None and len(diff) > 0:
+            print(f"Processing {len(diff)} SKUs for packaging data...")
+            sql_query = read_sql_query("get_sku_gebinde.sql", diff)
+        else:
+            print("Processing all SKUs for packaging data...")
+            # Remove any AID filtering from the query
+            sql_query = '\n'.join([line for line in sql_query.split('\n') 
+                                  if 'ArtNr IN' not in line and 'ArtikelCode IN' not in line])
+                
+        # Execute query and get data
         df = pd.DataFrame(execute_query(sql_query))
             
         if df.empty:
             print("No packaging data available")
             return None
         
+        # Process each row to create packaging records
         rename_columns = {
             'ArtikelCode': 'aid',
-            'Karton_HÃ¶he': 'height',
+            'Karton_Länge': 'length',
             'Karton_Breite': 'width',
-            'Karton_LÃ¤nge': 'length',
-            'Verpackungseinheit': 'packaging_unit',
-            'Kartoneinheit': 'carton_unit',
-            'Produktgewicht': 'weight'
+            'Karton_Höhe': 'height',
+            'Produktgewicht': 'weight',
+            'Kartoneinheit': 'packaging_unit',
+            'Verpackungseinheit': 'Verpackungseinheit'
         }
-        
-        rename_columns = {k: v for k, v in rename_columns.items() if k in df.columns}
+        # First rename the columns
         df = df.rename(columns=rename_columns)
         
-        result = []
-        for _, row in df.iterrows():
-            # Format packaging unit for Verpackungseinheit
-            packaging_unit = str(row['packaging_unit']).strip()
-            if packaging_unit == '1':
-                display_unit = 'Stk'
-            elif packaging_unit.isdigit() and int(packaging_unit) > 1:
-                display_unit = f"{packaging_unit}er Pack"
-            else:
-                display_unit = packaging_unit
-                
-            result.append({
-                'aid': row['aid'],
-                'packaging_configuration': 'Verpackungseinheit',
-                'packaging_unit': display_unit,
-                'packaging_factor': packaging_unit,
-                'length': float(row.get('length', 0)) * 10 if row.get('length') is not None else None,
-                'width': float(row.get('width', 0)) * 10 if row.get('width') is not None else None,
-                'height': float(row.get('height', 0)) * 10 if row.get('height') is not None else None,
-                'weight': row['weight'],
-                'company': 0
-            })
+        # Now process the renamed columns
+        for col in ['length', 'width', 'height']:
+            if col in df.columns:
+                # Convert to numeric, handling both strings with commas and numeric types
+                df[col] = pd.to_numeric(df[col].astype(str).str.replace(',', '.'), errors='coerce')
+                # Multiply by 10 and format with comma as decimal
+                df[col] = (df[col].fillna(0) * 10).apply(lambda x: f"{x:.1f}".replace('.', ','))
+        
+        # Process weight separately (don't multiply by 10)
+        if 'weight' in df.columns:
+            df['weight'] = df['weight'].fillna('0').astype(str).str.replace('.', ',', regex=False)
             
-            # Format carton unit for Kartoneinheit
-            carton_unit = str(row['carton_unit']).strip()
-            if carton_unit.isdigit():
-                display_carton = f"K{carton_unit}"
-                carton_factor = int(carton_unit)  # Keep numeric value for factor
-            else:
-                display_carton = carton_unit
-                carton_factor = 1  # Default factor if not a number
-                
-            result.append({
-                'aid': row['aid'],
-                'packaging_configuration': 'Kartoneinheit',
-                'packaging_unit': display_carton,
-                'packaging_factor': carton_factor,
-                'length': float(row['length']) * 10 if pd.notna(row.get('length')) else None,
-                'width': float(row['width']) * 10 if pd.notna(row.get('width')) else None,
-                'height': float(row['height']) * 10 if pd.notna(row.get('height')) else None,
-                'weight': row['weight'],
-                'is_packing_unit': 1,
-                'company': 0
-            })
+        # Set units and other fixed values
+        df['length_unit'] = 'mm'
+        df['width_unit'] = 'mm'
+        df['height_unit'] = 'mm'
+        df['weight_unit'] = 'g'
+        df['is_packing_unit'] = 1
+        df['company'] = 1
+        df['content_unit'] = 'Stk'
         
-        result = pd.DataFrame(result)
+        # Set packaging_factor from packaging_unit
+        df['packaging_factor'] = df['packaging_unit']
         
-        required_columns = ['aid', 'packaging_unit', 'packaging_factor', 'length', 'width', 'height', 'is_packing_unit', 'company']
-        for col in required_columns:
-            if col not in result.columns:
-                result[col] = None
+        # Format packaging_unit with 'K' prefix
+        if 'packaging_unit' in df.columns:
+            df['packaging_unit'] = 'K' + df['packaging_unit'].astype(str)
+            
+        result_df = df
         
-        result = result[required_columns]
+        # Add length, width, height, weight columns with default values if they don't exist
+        for col in ['length', 'width', 'height', 'weight']:
+            if col not in result_df.columns:
+                result_df[col] = ''
         
-        if 'company' not in result.columns:
-            result['company'] = 1
+        # Define output columns for the first file (without Verpackungseinheit)
+        output_columns = [
+            'aid', 'company', 'packaging_unit', 'packaging_factor', 
+            'length', 'width', 'height', 
+            'is_packing_unit', 'content_unit', 'length_unit', 'width_unit', 'height_unit'
+        ]
         
-        output_file = OUTPUT_DIR / "artikel_gebinde.csv"
-        result.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
-        return output_file if output_file.exists() else None
+        # Filter to only include columns that exist in the dataframe
+        output_columns = [col for col in output_columns if col in result_df.columns]
+        
+        # Save the first file with standard packaging data
+        output_file1 = OUTPUT_DIR / "artikel_gebinde.csv"
+        result_df[output_columns].to_csv(output_file1, index=False, encoding='utf-8-sig', sep=';')
+
+        # Only create the second file if Verpackungseinheit exists
+        if 'Verpackungseinheit' in result_df.columns:
+            # Rename Verpackungseinheit to packaging_unit for the second file and add 'er' to the end
+            del result_df['packaging_unit']
+            result_df = result_df.rename(columns={'Verpackungseinheit': 'packaging_unit'})
+            result_df['packaging_unit'] = result_df['packaging_unit'].astype(str) + 'er'
+            result_df['is_packing_unit'] = 0
+            result_df = result_df[~(result_df['packaging_unit'].isin(['1er', '1']))]
+            result_df['packaging_factor'] = result_df['packaging_unit'].str.replace('er', '').astype(int)
+            result_df['length'] = 0
+            result_df['width'] = 0
+            result_df['height'] = 0
+            result_df['length_unit'] = 'mm'
+            result_df['width_unit'] = 'mm'
+            result_df['height_unit'] = 'mm'
+            
+            
+            # Define columns for the second file (with packaging_unit)
+            output_columns_ve = [
+                'aid', 'packaging_unit', 'packaging_factor',
+                'is_packing_unit', 'company',
+                'content_unit', 'length_unit', 'width_unit', 'height_unit', 'length', 'width', 'height'
+            ]
+            
+            # Save the second file with packaging_unit
+            output_file2 = OUTPUT_DIR / "ARTICLE_PACKAGING_IMPORT - SKU-Gebindedaten_VE.csv"
+            result_df[output_columns_ve].to_csv(output_file2, index=False, encoding='utf-8-sig', sep=';')
+            print(f"Exported {len(result_df)} packaging records (both files)")
+            return output_file2 if output_file2.exists() else None
+        else:
+            print(f"Exported {len(result_df)} packaging records (standard file only)")
+            return output_file1 if output_file1.exists() else None
         
     except Exception as e:
-        print(f"Error in import_artikel_keyword: {e}")
+        print(f"Error in import_sku_gebinde: {e}")
+        raise
         import traceback
         traceback.print_exc()
             
@@ -1804,7 +1919,7 @@ def import_order():
         rename_columns = {k: v for k, v in rename_columns.items() if k in result.columns}
         result = result.rename(columns=rename_columns)
         
-        result['company'] = 0
+        result['company'] = 1
         result['order_auto'] = 1
         result['currency'] = 'USD'
         result['ex_txDate'] = result['ex_txDate'].dt.strftime("%Y%m%d")
@@ -1859,7 +1974,7 @@ def import_order_are_15():
         rename_columns = {k: v for k, v in rename_columns.items() if k in result.columns}
         result = result.rename(columns=rename_columns)
         
-        result['company'] = 0
+        result['company'] = 1
         result['order_auto'] = 1
         result['currency'] = 'USD'
         result['ex_txDate'] = result['ex_txDate'].dt.strftime("%Y%m%d")
@@ -2043,7 +2158,7 @@ def import_order_classification():
         # Export order position data to CSV
         orderpos_output = OUTPUT_DIR / "orderpos_data.csv"
         orderpos_data.to_csv(orderpos_output, index=False, encoding='utf-8-sig', sep=';')
-        print(f"✅ Exported order position data to: {orderpos_output}")
+        print(f"Exported order position data to: {orderpos_output}")
         print(f"Order position data columns: {orderpos_data.columns.tolist()}")
         print(f"Total order positions: {len(orderpos_data)}")
             
@@ -2132,7 +2247,134 @@ def import_order_classification():
         print(f"Error in import_order: {str(e)}")
         import traceback
         traceback.print_exc()
-        return None       
+        return None      
+def import_stock_lager(diff_areas=None):
+    """
+    Import stock/lager data from MDB database and export to CSV.
+    
+    Args:
+        diff_areas (list, optional): List of area codes to filter. If None, all areas are included.
+    
+    Returns:
+        tuple: Paths to the generated CSV files
+    """
+    try:
+        # Import diff_areas only when needed
+        if diff_areas is None:
+            try:
+                from run_comparison_standalone import diff_areas as _diff_areas
+                diff_areas = _diff_areas
+            except (ImportError, AttributeError):
+                pass
+
+        # Read the SQL query from file
+        with open(Path(__file__).parent.parent / 'sql' / 'get_lager.sql', 'r', encoding='utf-8') as f:
+            sql_query = f.read()
+        
+        # Prepare parameters
+        params = ['Kommissionierungslager', -1]
+        
+        # Add area filter if diff_areas is provided
+        # Convert diff_areas to list if it's a set
+        if isinstance(diff_areas, set):
+            diff_areas = list(diff_areas)
+            
+        if diff_areas and len(diff_areas) > 0:
+            print(f"Filtering {len(diff_areas)} areas")
+            # For large number of areas, we'll filter in Python instead of SQL
+            # This avoids the parameter limit issue
+            area_condition = ""
+        else:
+            area_condition = ""
+            
+        sql_query = sql_query.format(diff_areas_filter=area_condition)
+        
+        # Execute the query
+        df = pd.DataFrame(execute_query(sql_query, params))
+        if df.empty:
+            return None, None, None
+            
+        # Format the area column
+        df['area'] = df.apply(
+            lambda row: f"{row['Reihe']}-{row['Regal']}-{int(row['Palette']):04d}",
+            axis=1
+        )
+        
+        df_unfiltered = df.copy()
+        
+        # Apply diff_areas filter to the main DataFrame if needed
+        if diff_areas and len(diff_areas) > 0:
+            df['area_lower'] = df['area'].str.lower()
+            valid_areas_lower = {str(area).lower() for area in diff_areas}
+            df = df[df['area_lower'].isin(valid_areas_lower)]
+            df = df.drop(columns=['area_lower'])
+    
+        if df.empty:
+            return None, None, None
+        # Rest of your code remains the same
+        # Add required columns
+        df['company'] = 0
+        df['factory'] = 'Düsseldorf'
+        df['refilPoint'] = 25
+        df['refilPointIsPercent'] = -1
+        df['refilQuantity'] = 0
+        df['unit'] = 'STK'
+        df['is_priority_area'] = 1
+        df['isPriorityArea'] = 1  # Add this line to match the column name in main_columns
+        df['storage_area_type'] = 'PICKING'  # Add missing column with default value
+        df['refilQuantity'] = 0
+        df['unit'] = 'Stk'
+        df['is_priority_area'] = 1
+        
+        
+        # Select and reorder columns for main output
+        main_columns = [
+            'location', 'factory', 'area', 'is_priority_area'
+        ]
+        main_output_columns = [col for col in main_columns if col in df.columns]
+        
+        # Save main output file
+        main_output_file = OUTPUT_DIR / "STOCK - Lager.csv"
+        df[main_output_columns].to_csv(
+            main_output_file, index=False, encoding='utf-8-sig', sep=';'
+        )
+        
+        # Create and save priority area file
+        priority_columns = ['aid', 'area', 'company', 'factory', 'location']
+        priority_df = df[['aid', 'area', 'company', 'factory', 'location']].copy()
+        priority_df = priority_df[priority_columns]  # Reorder columns
+        
+        priority_file = OUTPUT_DIR / "STOCKARTICLE_PRIORITY_AREA - Prioritätsplätze.csv"
+        priority_df.to_csv(
+            priority_file, index=False, encoding='utf-8-sig', sep=';'
+        )
+        
+        # Create and save location definition file
+        loc_def_columns = [
+            'aid', 'area', 'company', 'factory', 'location', 
+            'quantity', 'refilPoint', 'refilPointIsPercent',
+            'unit'
+        ]
+        loc_def_df = df[loc_def_columns].copy()
+        
+        loc_def_file = OUTPUT_DIR / "Stockarticle_LocDef-Stellplatzdefinitionen.csv"
+        loc_def_df.to_csv(
+            loc_def_file, index=False, encoding='utf-8-sig', sep=';'
+        )
+        
+        return (
+            main_output_file if main_output_file.exists() else None,
+            priority_file if priority_file.exists() else None,
+            loc_def_file if loc_def_file.exists() else None
+        )
+            
+    except Exception as e:
+        print(f"Error in import_stock_lager: {e}")
+        import traceback
+        traceback.print_exc()
+        return None, None, None
+    
+    
 # This allows the script to be run directly
 if __name__ == "__main__":
     """import_sku_basis()
@@ -2157,17 +2399,11 @@ if __name__ == "__main__":
     import_order()
     import_order_are_15()
     import_order_pos_are_15()
-    import_order_pos()"""
-    update_sku()
+    import_order_pos()
+    update_sku()"""
+    import_stock_lager()
+    import_sku_basis()
     
     
-
-    
-
-   
     
 
-    
-
-   
-    

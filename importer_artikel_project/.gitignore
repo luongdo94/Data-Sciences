@@ -1,23 +1,77 @@
-# Ignore datem.mdb file
-C:\Users\gia.luongdo\Python\importer_artikel_project\data\DATEN.MDB
+# Ignore large data files
+data/*.mdb
+data/*.ldb
+data/*.MDB
+data/*.LDB
+data/*.xlsx
+
+# Output files
+data/output/
+data/*.csv
+!data/Price_ERP.csv  # Keep this file tracked
 
 # Python cache and compiled files
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
+*.pyo
+*.pyd
 
 # Virtual Environment
 venv/
 env/
+.env
 
 # IDE specific files
 .vscode/
 .idea/
+*.sublime-*
 
 # Distribution / packaging
 .Python
 build/
 develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs and databases
+*.log
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*~
+*.swp
+*.swo
+*~
+
+# Project specific
+data/output/*.csv
+!data/output/*.csv.example  # Example files can be tracked
+Thumbs.db
+
+# Logs
+*.log
+
+# Local development settings
+.env
+.env.local
 dist/
 downloads/
 eggs/

@@ -28,8 +28,8 @@ def compare_columns(
         )
             
         # Process data and convert to lowercase
-        col1_values = df[col1].dropna().astype(str).str.strip().str.lower()
-        col2_values = df[col2].dropna().astype(str).str.strip().str.lower()
+        col1_values = df[col1].dropna().astype(str).str.strip()
+        col2_values = df[col2].dropna().astype(str).str.strip()
         
         # Find differences (case insensitive comparison)
         diff = set(col1_values) - set(col2_values)

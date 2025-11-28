@@ -2,7 +2,7 @@ import os
 import pyodbc
 import pandas as pd
 from dotenv import load_dotenv
-from .config import CONN_STR, SQL_DIR
+from src.config import CONN_STR, SQL_DIR
 
 # Load environment variables from .env file
 load_dotenv()

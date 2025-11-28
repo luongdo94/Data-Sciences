@@ -1,5 +1,4 @@
-SELECT
-    AID as aid_erp
-
-FROM
-    [fet_user].[FET_ARTICLE_PROXY];
+SELECT *
+  FROM [fet_test].[fet_user].[FET_ARTICLE]
+  where VALID_UNTIL >= getdate()
+  
