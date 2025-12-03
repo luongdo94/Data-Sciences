@@ -15,8 +15,7 @@ from src.simple_article_importer import (
     import_sku_variant, import_artikel_variant, import_artikel_preisstufe_3_7,
     import_artikel_basicprice, import_artikel_pricestaffeln,
     import_sku_EAN, import_sku_gebinde, update_sku,
-    import_order, import_order_are_15, import_order_pos, import_order_pos_are_15, import_order_classification,
-    import_artikel_text_en, import_sku_text_en
+    import_order, import_order_are_15, import_order_pos, import_order_pos_are_15, import_order_classification
 )
 from src.sku_color_processor import process_colors
 
@@ -62,7 +61,7 @@ def process_sku_data():
     sku_classification_file = import_sku_classification()
     sku_keyword_file = import_sku_keyword()
     sku_variant_file = import_sku_variant()
-    sku_update_file = update_sku()
+    sku_update_file = update_sku(diff) if diff else None
     
     # Process price data
     print("\n=== Processing Price Data ===")
@@ -84,7 +83,6 @@ def process_sku_data():
     # Process additional SKU data
     print("\n=== Processing Additional SKU Data ===")
     sku_text_files = import_sku_text() or []
-    sku_text_en_files = import_sku_text_en() or []
     sku_EAN_file = import_sku_EAN()
     
     # Get both output files from import_sku_gebinde()
@@ -146,26 +144,13 @@ def process_sku_data():
     
     # Process text files
     text_types = ['webshoptext', 'artikeltext', 'katalogtext', 'vertriebstext', 'rechnungstext', 'pflegehinweise']
-    
-    # Process German text files
     for text_file in sku_text_files:
         if text_file and Path(text_file).exists():
             file_stem = Path(text_file).stem.lower()
             for text_type in text_types:
-                if text_type in file_stem and '_en_' not in file_stem:
-                    final_name = f"SKU_TEXT - {text_type.capitalize()}.csv"
-                    safe_process_colors(text_file, f"SKU_TEXT - {text_type.capitalize()}")
-                    safe_rename(text_file, Path(text_file).parent / final_name, final_name)
-                    break
-
-    # Process English text files
-    for text_file in sku_text_en_files:
-        if text_file and Path(text_file).exists():
-            file_stem = Path(text_file).stem.lower()
-            for text_type in text_types:
                 if text_type in file_stem:
-                    final_name = f"SKU_TEXT_EN - {text_type.capitalize()}.csv"
-                    safe_process_colors(text_file, f"SKU_TEXT_EN - {text_type.capitalize()}")
+                    final_name = f"ARTICLE_TEXT - {text_type.capitalize()}.csv"
+                    safe_process_colors(text_file, f"ARTICLE_TEXT - {text_type.capitalize()}")
                     safe_rename(text_file, Path(text_file).parent / final_name, final_name)
                     break
 
@@ -189,20 +174,10 @@ def process_article_data():
     
     # Process text files
     artikel_text_files = import_artikel_text() or []
-    artikel_text_en_files = import_artikel_text_en() or []
-    
-    # Process German text files
     for text_file in artikel_text_files:
         if text_file and Path(text_file).exists():
             file_type = Path(text_file).stem.split('_')[-1]
             final_name = f"ARTICLE_TEXT-{file_type.upper()}.csv"
-            safe_rename(text_file, Path(text_file).parent / final_name, final_name)
-
-    # Process English text files
-    for text_file in artikel_text_en_files:
-        if text_file and Path(text_file).exists():
-            file_type = Path(text_file).stem.split('_')[-1]
-            final_name = f"ARTICLE_TEXT_EN-{file_type.upper()}.csv"
             safe_rename(text_file, Path(text_file).parent / final_name, final_name)
 
 def process_order_data():

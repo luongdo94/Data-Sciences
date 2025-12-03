@@ -136,7 +136,7 @@ After running the tool, check the `data/output` folder. You will see files like:
 | **Prices** | `PRICELIST - *.csv` | Base prices, price scales, and validity dates. |
 | **Stock** | `STOCK - *.csv` | Current warehouse stock levels. | Stock data come from fet_user.V_STOCK/fet_user.V_Promodoro_STOCK
 | **Orders** | `CONTRACT - *.csv` | Order and contract information. |
-    * Business_Partner data come from fet_user.FET_BUSINESSPARTNER
+    * Business_Partner data come from fet_user.FET_BUSINESSPARTNER, [fet_user].[FET_CUSTOMER], fet_user.V_CUSTOMER, fet_user.FET_SUPPLIER
  
 
 ---

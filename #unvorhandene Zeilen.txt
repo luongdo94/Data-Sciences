@@ -1,9 +1,0 @@
-#unvorhandene Zeilen:
-- Kategorie
-- Subkategorie
-- Intrastat Text
-- Fabric Herstellung
-- Fabric Material
-- Fabric Einsatz
-- Artikelnummer des Partnerartikels
-+ Pflegehinweis Zeilen

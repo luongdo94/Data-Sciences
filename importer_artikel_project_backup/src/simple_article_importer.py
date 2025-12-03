@@ -32,18 +32,22 @@ def extract_numbers(value):
     numbers = re.findall(r'\d+', str(value))
     return ''.join(numbers) if numbers else ''
 
-def update_sku():
+def update_sku(diff):
     try:
-        # Execute query without diff filter
-        df = pd.DataFrame(execute_query(read_sql_query("getall_aid_ew.sql")))
+        df = pd.DataFrame(execute_query(read_sql_query("getall_aid_ew.sql", diff)))
         if df.empty:
             return None
     
+    # Read data from file and convert to list
+        df_update = pd.read_excel(Path(__file__).parent.parent / 'data' / 'ARTICLE_UPDATE_SRC.xlsx')
+        data_list = df_update.values.tolist()
+        
         # Map aid1 to aid if it exists
         if 'aid1' in df.columns:
             df['aid'] = df['aid1'].astype(str)
         
         # Add required columns similar to import_sku_basis
+        df['aid'] = df_update['aid'].astype(str)
         df['company'] = 0
         df['automatic_batch_numbering_pattern'] = '{No,000000000}'
         df['batch_management'] = 2
@@ -59,6 +63,7 @@ def update_sku():
         df['taxPi'] = df['taxSl'] = 'Waren'
         df['valid_to'] = datetime.now().strftime("%Y%m%d")
         #df['country_of_origin'] = df['Ursprungsland'].str[:2] if 'Ursprungsland' in df else ''
+        df = df.merge(df_update, on='aid', how='inner')
 
         
         
@@ -628,16 +633,13 @@ def import_artikel_text(diff1=None):
         if df.empty:
             print("No article text data returned")
             return []
-            
-        # Remove duplicate columns if any (e.g. ArtikelNeu from multiple tables)
-        df = df.loc[:, ~df.columns.duplicated()]
         
         # Process the data
         # Replace NaN values with empty string and strip whitespace
         df = df.fillna('').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
         # Apply text processing to Pflegekennzeichnung
         df['Pflegekennzeichnung'] = df['Pflegekennzeichnung'].str.split(';').str.join('\n')
-        df['Pflegekennzeichnung'] = df['Pflegekennzeichnung'].apply(lambda x: x[:2] + '°C' + x[2:] if len(x) > 2 and '°C' not in x else x)
+        df['Pflegekennzeichnung'] = df['Pflegekennzeichnung'].apply(lambda x: x[:2] + 'Â°C' + x[2:] if len(x) > 2 and 'Â°C' not in x else x)
         # Define text classifications and their corresponding text content
         text_classifications = [
             ('Webshoptext', df['ArtText'] + ' ' + df['ArtSpec1'] + ' ' + df['ArtSpec2']),
@@ -660,9 +662,6 @@ def import_artikel_text(diff1=None):
             df_result['language'] = 'DE'
             df_result['textClassification'] = classification
             df_result['text'] = text_content.str.strip()  # Remove extra whitespace
-            df_result['deleteTexts'] = 0
-            df_result['valid_from_text'] = datetime.now().strftime('%Y%m%d')
-            df_result['valid_to_text'] = ''
             
             # Remove rows with empty text
             df_result = df_result[df_result['text'].str.len() > 0]
@@ -682,7 +681,7 @@ def import_artikel_text(diff1=None):
             df_result['text'] = df_result['text'].str.replace('\r\n', '||')
             
             # Reorder columns
-            df_result = df_result[['aid', 'company', 'textClassification', 'text', 'language', 'deleteTexts', 'valid_from_text', 'valid_to_text']]
+            df_result = df_result[['aid', 'company', 'textClassification', 'text', 'language']]
             
             # Create output filename based on classification
             output_file = OUTPUT_DIR / f"article_text_{classification.lower()}.csv"
@@ -694,195 +693,6 @@ def import_artikel_text(diff1=None):
         
         # Process Pflegehinweise file after all classifications are done
         pflegehinweise_file = OUTPUT_DIR / "article_text_pflegehinweise.csv"
-        if pflegehinweise_file.exists():
-            # Read with explicit UTF-8-SIG encoding to handle BOM
-            df_pflegehinweise = pd.read_csv(pflegehinweise_file, sep=';', encoding='utf-8-sig')
-            
-            if 'text' in df_pflegehinweise.columns:
-                # Ensure text is properly encoded
-                df_pflegehinweise['text'] = df_pflegehinweise['text'].astype(str)
-                
-                # Add 'Waschen:' at the beginning with consistent formatting
-                df_pflegehinweise['text'] = 'Waschen: || ' + df_pflegehinweise['text']
-                
-                # Handle 'Reinigung' section
-                df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                    lambda x: x.replace('Keine chemische', '|| Reinigung: || Keine chemische')
-                    if 'Keine chemische' in x and 'Reinigung:' not in x
-                    else x
-                )
-                
-                # Define the keywords to add with their patterns
-                keywords = {
-                    'Trocknen': '||Trocknen',
-                    'mäßig': '||Bügeln',
-                    'Reinigen': '||Reinigen'
-                }
-                
-                # Add keywords before each section if they don't already have a colon
-                for pattern, keyword in keywords.items():
-                    # Special handling for BÃ¼geln to place it before 'nicht heiÃŸ bÃ¼geln', 'nicht bÃ¼geln', or 'mÃ¤ÃŸig'
-                    if keyword == 'Bügeln':
-                        # First check for 'nicht heiÃŸ bÃ¼geln'
-                        df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                            lambda x: x.replace('nicht heiß bügeln', ' ||Bügeln: || nicht heiß bügeln')
-                            if 'nicht heiß bügeln' in x and 'Bügeln:' not in x
-                            else x
-                        )
-                        # Then check for 'nicht bügeln' if 'nicht heiÃŸ bÃ¼geln' wasn't found
-                        df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                            lambda x: x.replace('nicht bügeln', ' ||Bügeln: || nicht bügeln')
-                            if 'nicht bügeln' in x and 'Bügeln:' not in x
-                            else x
-                        )
-                        # Handle standalone 'Bügeln' section
-                        df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                            lambda x: x.replace('Bügeln:', ' ||Bügeln: ||') if 'Bügeln:' in x and '||Bügeln: ||' not in x else x
-                        )
-                        # Handle case where 'Bügeln' appears without a colon
-                        df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                            lambda x: x.replace(' Bügeln ', ' ||Bügeln: || ') if ' Bügeln ' in x and 'Bügeln:' not in x and '||Bügeln: ||' not in x else x
-                        )
-                        # Finally check for 'mÃ¤ÃŸig' if neither of the above were found
-                        df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                            lambda x: x.replace('mäßig', '||Bügeln: || mäßig')
-                            if 'mäßig' in x and f' {keyword}:' not in x
-                            else x
-                        )
-                    else:
-                        # Standard handling for other keywords
-                        df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                            lambda x: x.replace(f' {pattern}', f' {keyword}: || {pattern}') 
-                            if f' {keyword}:' not in x and f' {pattern}' in x 
-                            else x
-                        )
-                        
-                        # Then ensure the format is consistent (in case only one separator was added)
-                        df_pflegehinweise['text'] = df_pflegehinweise['text'].str.replace(
-                            f' {keyword}: {pattern}', 
-                            f' {keyword}: || {pattern}'
-                        )
-                
-                # Clean up any double spaces that might have been created
-                df_pflegehinweise['text'] = df_pflegehinweise['text'].str.replace(r'\s+', ' ', regex=True)
-                
-                # Ensure consistent spacing around separators
-                df_pflegehinweise['text'] = df_pflegehinweise['text'].str.replace('\|\|', ' || ').str.replace('\s+', ' ').str.strip()
-                df_pflegehinweise['text'] = df_pflegehinweise['text'].str.replace(' : ', ': ')
-                
-                # Save with proper encoding
-                df_pflegehinweise.to_csv(pflegehinweise_file, index=False, encoding='utf-8-sig', sep=';')
-                print(f"Care instructions with keywords added and saved to: {pflegehinweise_file}")              
-            else:
-                print(f"Warning: 'text' column not found in {pflegehinweise_file}")
-        
-        return output_files if output_files else []
-        
-
-    except Exception as e:
-        print(f"Error in import_artikel_text: {e}")
-        import traceback
-        traceback.print_exc()
-        raise
-
-def import_artikel_text_en(diff1=None):
-    try:
-        # Import diff1 lazily if not provided
-        if diff1 is None:
-            try:
-                from run_comparison_standalone import diff1 as _diff
-                if _diff:
-                    diff1 = _diff
-            except (ImportError, FileNotFoundError):
-                diff1 = None
-        
-        # If a diff1 list was provided but is empty, treat as None
-        if diff1 is not None and len(diff1) == 0:
-            diff1 = None
-        
-        # Read the SQL query from file
-        with open(Path(__file__).parent.parent / 'sql' / 'get_article_text_EN.sql', 'r', encoding='utf-8') as f:
-            sql_query = f.read()
-            
-        # If we have diff1, use it to filter the query
-        if diff1 is not None and len(diff1) > 0:
-            print(f"Processing {len(diff1)} AIDs for English article text...")
-            sql_query = read_sql_query("get_article_text_EN.sql", diff1)
-        else:
-            print("Processing all article data for English text...")
-            # Remove the entire AID filter line if no diff1 is provided
-            sql_query = '\n'.join([line for line in sql_query.split('\n') if 'ArtNr IN' not in line])
-        df = pd.DataFrame(execute_query(sql_query))
-        
-        if df.empty:
-            print("No English article text data returned")
-            return []
-            
-        # Remove duplicate columns if any (e.g. ArtikelNeu from multiple tables)
-        df = df.loc[:, ~df.columns.duplicated()]
-        
-        # Process the data
-        # Replace NaN values with empty string and strip whitespace
-        df = df.fillna('').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
-        # Apply text processing to Pflegekennzeichnung
-        df['Pflegekennzeichnung'] = df['Pflegekennzeichnung'].str.split(';').str.join('\n')
-        df['Pflegekennzeichnung'] = df['Pflegekennzeichnung'].apply(lambda x: x[:2] + '°C' + x[2:] if len(x) > 2 and '°C' not in x else x)
-        # Define text classifications and their corresponding text content
-        text_classifications = [
-            ('Webshoptext', df['ArtText'] + ' ' + df['ArtSpec1'] + ' ' + df['ArtSpec2']),
-            ('Artikeltext', df['ArtText'] + ' ' + df['ArtSpec1'] + ' ' + df['ArtSpec2']),
-            ('Katalogtext', df['ArtText'] + ' ' + df['ArtSpec1'] + ' ' + df['ArtSpec2']),
-            ('Vertriebstext', df['ArtBem'] + ' ' + df['ArtText'] + ' ' + df['VEText'] + ' ' + df['VEText2'] + ' ' + df['VEText_SP']),
-            ('Rechnungstext', df['ArtBem']),
-            ('Pflegehinweise', df['Pflegekennzeichnung'])
-        ]
-        
-        output_files = []
-        
-        for classification, text_content in text_classifications:
-            # Create a copy of the base dataframe for this classification
-            df_result = df[['ArtikelNeu']].copy()
-            df_result.rename(columns={'ArtikelNeu': 'aid'}, inplace=True)
-            
-            # Add required columns
-            df_result['company'] = 0
-            df_result['language'] = 'EN'
-            df_result['textClassification'] = classification
-            df_result['text'] = text_content.str.strip()  # Remove extra whitespace
-            df_result['deleteTexts'] = 0
-            df_result['valid_from_text'] = datetime.now().strftime('%Y%m%d')
-            df_result['valid_to_text'] = ''
-            
-            # Remove rows with empty text
-            df_result = df_result[df_result['text'].str.len() > 0]
-            
-            if df_result.empty:
-                print(f"No English data for {classification} after removing empty text")
-                continue
-                
-            # Remove duplicates based on aid and textClassification
-            df_result = df_result.drop_duplicates(subset=['aid', 'textClassification', 'text'])
-            
-            # For each aid, keep only the first occurrence of each textClassification
-            df_result = df_result.drop_duplicates(subset=['aid', 'textClassification'])
-            
-            # Clean up text: replace multiple spaces and line breaks
-            df_result['text'] = df_result['text'].str.replace(r'\s+', ' ', regex=True)
-            df_result['text'] = df_result['text'].str.replace('\r\n', '||')
-            
-            # Reorder columns
-            df_result = df_result[['aid', 'company', 'textClassification', 'text', 'language', 'deleteTexts', 'valid_from_text', 'valid_to_text']]
-            
-            # Create output filename based on classification
-            output_file = OUTPUT_DIR / f"article_text_en_{classification.lower()}.csv"
-            df_result.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
-            
-            if output_file.exists():
-                output_files.append(output_file)
-                print(f"{classification} English data exported with {len(df_result)} rows to: {output_file}")
-        
-        # Process Pflegehinweise file after all classifications are done
-        pflegehinweise_file = OUTPUT_DIR / "article_text_en_pflegehinweise.csv"
         if pflegehinweise_file.exists():
             # Read with explicit UTF-8-SIG encoding to handle BOM
             df_pflegehinweise = pd.read_csv(pflegehinweise_file, sep=';', encoding='utf-8-sig')
@@ -961,14 +771,14 @@ def import_artikel_text_en(diff1=None):
                 
                 # Save with proper encoding
                 df_pflegehinweise.to_csv(pflegehinweise_file, index=False, encoding='utf-8-sig', sep=';')
-                print(f"English care instructions with keywords added and saved to: {pflegehinweise_file}")              
+                print(f"Care instructions with keywords added and saved to: {pflegehinweise_file}")              
             else:
                 print(f"Warning: 'text' column not found in {pflegehinweise_file}")
         
         return output_files if output_files else []
         
     except Exception as e:
-        print(f"Error in import_artikel_text_en: {e}")
+        print(f"Error in import_artikel_text: {e}")
         import traceback
         traceback.print_exc()
         raise
@@ -1036,9 +846,6 @@ def import_sku_text():
             df_result['language'] = 'DE'
             df_result['textClassification'] = classification
             df_result['text'] = text_content.str.strip()  # Remove extra whitespace
-            df_result['deleteTexts'] = 0
-            df_result['valid_from_text'] = datetime.now().strftime('%Y%m%d')
-            df_result['valid_to_text'] = ''
             
             # Remove rows with empty text
             df_result = df_result[df_result['text'].str.len() > 0]
@@ -1058,203 +865,25 @@ def import_sku_text():
             df_result['text'] = df_result['text'].str.replace('\r\n', '||')
             
             # Reorder columns
-            df_result = df_result[['aid', 'company', 'textClassification', 'text', 'language', 'deleteTexts', 'valid_from_text', 'valid_to_text']]
+            df_result = df_result[['aid', 'company', 'textClassification', 'text', 'language']]
             
             # Create output filename based on classification
             output_file = OUTPUT_DIR / f"sku_text_{classification.lower()}.csv"
             df_result.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
             
-        # Process Pflegehinweise file after all classifications are done
-        pflegehinweise_file = OUTPUT_DIR / "sku_text_pflegehinweise.csv"
-        if pflegehinweise_file.exists():
-            df_pflegehinweise = pd.read_csv(pflegehinweise_file, sep=';', encoding='utf-8-sig')
-            
-            # Add keywords to specific positions in the text if they're not already present
-            if 'text' in df_pflegehinweise.columns:
-                # Ensure text is properly encoded and clean
-                df_pflegehinweise['text'] = df_pflegehinweise['text'].astype(str)
+            # Process Pflegehinweise file after all classifications are done
+            pflegehinweise_file = OUTPUT_DIR / "sku_text_pflegehinweise.csv"
+            if pflegehinweise_file.exists():
+                df_pflegehinweise = pd.read_csv(pflegehinweise_file, sep=';', encoding='utf-8-sig')
                 
-                # Add 'Waschen:' at the beginning of the text with consistent formatting
-                df_pflegehinweise['text'] = 'Waschen: || ' + df_pflegehinweise['text']
-            
-            # Add 'Reinigung: ||' before 'Keine chemische' if it exists
-            df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                lambda x: x.replace('Keine chemische', '|| Reinigung: || Keine chemische')
-                if 'Keine chemische' in x and 'Reinigung:' not in x
-                else x
-            )
-            
-            # Define the keywords to add with their patterns
-            keywords = {
-                'Trocknen': '||Trocknen',
-                'mäßig': '||Bügeln',
-                'Reinigen': '||Reinigen'
-            }
-            
-            # Add keywords before each section if they don't already have a colon
-            for pattern, keyword in keywords.items():
-                # Special handling for BÃ¼geln to place it before 'nicht heiÃŸ bÃ¼geln', 'nicht bÃ¼geln', or 'mÃ¤ÃŸig'
-                if keyword == 'Bügeln':
-                    # First check for 'nicht heiÃŸ bÃ¼geln'
-                    df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                        lambda x: x.replace('nicht heiß bügeln', ' ||Bügeln: || nicht heiß bügeln')
-                        if 'nicht heiß bügeln' in x and 'Bügeln:' not in x
-                        else x
-                    )
-                    # Then check for 'nicht bügeln' if 'nicht heiÃŸ bÃ¼geln' wasn't found
-                    df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                        lambda x: x.replace('nicht bügeln', ' ||Bügeln: || nicht bügeln')
-                        if 'nicht bügeln' in x and 'Bügeln:' not in x
-                        else x
-                    )
-                    # Handle standalone 'BÃ¼geln' section
-                    df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                        lambda x: x.replace('Bügeln:', ' ||Bügeln: ||') if 'Bügeln:' in x and '||Bügeln: ||' not in x else x
-                    )
-                    # Handle case where 'BÃ¼geln' appears without a colon
-                    df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                        lambda x: x.replace(' Bügeln ', ' ||Bügeln: || ') if 'Bügeln' in x and 'Bügeln:' not in x and '||Bügeln: ||' not in x else x
-                    )
-                    # Finally check for 'mÃ¤ÃŸig' if neither of the above were found
-                    df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                        lambda x: x.replace('mässig', '||Bügeln: || mäßig')
-                        if 'mäßig' in x and f' {keyword}:' not in x
-                        else x
-                    )
-                else:
-                    # Standard handling for other keywords
-                    df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                        lambda x: x.replace(f' {pattern}', f' {keyword}: || {pattern}') 
-                        if f' {keyword}:' not in x and f' {pattern}' in x 
-                        else x
-                    )
+                # Add keywords to specific positions in the text if they're not already present
+                if 'text' in df_pflegehinweise.columns:
+                    # Ensure text is properly encoded and clean
+                    df_pflegehinweise['text'] = df_pflegehinweise['text'].astype(str)
                     
-                    # Then ensure the format is consistent (in case only one separator was added)
-                    df_pflegehinweise['text'] = df_pflegehinweise['text'].str.replace(
-                        f' {keyword}: {pattern}', 
-                        f' {keyword}: || {pattern}'
-                    )
-            
-            # Clean up any double spaces that might have been created
-            df_pflegehinweise['text'] = df_pflegehinweise['text'].str.replace(r'\s+', ' ', regex=True)
-            
-            # Save the updated file
-            df_pflegehinweise.to_csv(pflegehinweise_file, index=False, encoding='utf-8-sig', sep=';')
-            print(f"Care instructions with keywords added and saved to: {pflegehinweise_file}")
-        else:
-            print(f"Warning: 'text' column not found in {pflegehinweise_file}")
-        
-        return output_files if output_files else None
-        
-    except Exception as e:
-        print(f"Error in import_sku_text: {e}")
-        import traceback
-        traceback.print_exc()
-        raise
-
-def import_sku_text_en():
-    try:
-        # Make diff optional
-        try:
-            from run_comparison_standalone import diff
-            if not diff:
-                print("No AIDs found in diff. Processing all data...")
-                diff = None
-        except (ImportError, FileNotFoundError):
-            print("Comparison module not found. Processing all data...")
-            diff = None
-        
-        # Read the SQL query from file
-        with open(Path(__file__).parent.parent / 'sql' / 'get_sku_text_EN.sql', 'r', encoding='utf-8') as f:
-            sql_query = f.read()
-            
-        # If we have diff, use it to filter the query
-        if diff is not None:
-            sql_query = read_sql_query("get_sku_text_EN.sql", diff)
-        else:
-            # Remove the AID filter if no diff is provided
-            sql_query = sql_query.replace('AND s.ArtikelCode IN ({aid_placeholders})', '')
-            
-        # Execute the query
-        df = pd.DataFrame(execute_query(sql_query))
-        
-        if df.empty:
-            print("No English article text data returned")
-            return []
-        
-        # Process the data
-        # Replace NaN values with empty string and strip whitespace
-        df = df.fillna('').apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
-        
-        # Apply text processing to Pflegekennzeichnung
-        df['Pflegekennzeichnung'] = df['Pflegekennzeichnung'].str.split(';').str.join('\n')
-        df['Pflegekennzeichnung'] = df['Pflegekennzeichnung'].apply(lambda x: x[:2] + '°C' + x[2:] if len(x) > 2 and '°C' not in x else x)
-
-        # Define text classifications and their corresponding text content
-        text_classifications = [
-            ('Webshoptext', df['ArtText'] + ' ' + df['ArtSpec1'] + ' ' + df['ArtSpec2']),
-            ('Artikeltext', df['ArtText'] + ' ' + df['ArtSpec1'] + ' ' + df['ArtSpec2']),
-            ('Katalogtext', df['ArtText'] + ' ' + df['ArtSpec1'] + ' ' + df['ArtSpec2']),
-            ('Vertriebstext', df['ArtBem'] + ' ' + df['ArtText'] + ' ' + df['VEText'] + ' ' + df['VEText2'] + ' ' + df['VEText_SP']),
-            ('Rechnungstext', df['ArtBem']),
-            ('Pflegehinweise', df['Pflegekennzeichnung'])
-        ]
-        
-        output_files = []
-        
-        # Process Pflegehinweise separately
-        for classification, text_content in text_classifications:
-            # Create a copy of the base dataframe for this classification
-            df_result = df[['ArtikelCode']].copy()
-            df_result.rename(columns={'ArtikelCode': 'aid'}, inplace=True)
-            
-            # Add required columns
-            df_result['company'] = 0
-            df_result['language'] = 'EN'
-            df_result['textClassification'] = classification
-            df_result['text'] = text_content.str.strip()  # Remove extra whitespace
-            df_result['deleteTexts'] = 0
-            df_result['valid_from_text'] = datetime.now().strftime('%Y%m%d')
-            df_result['valid_to_text'] = ''
-            
-            # Remove rows with empty text
-            df_result = df_result[df_result['text'].str.len() > 0]
-            
-            if df_result.empty:
-                print(f"No English data for {classification} after removing empty text")
-                continue
+                    # Add 'Waschen:' at the beginning of the text with consistent formatting
+                    df_pflegehinweise['text'] = 'Waschen: || ' + df_pflegehinweise['text']
                 
-            # Remove duplicates based on aid and textClassification
-            df_result = df_result.drop_duplicates(subset=['aid', 'textClassification', 'text'])
-            
-            # For each aid, keep only the first occurrence of each textClassification
-            df_result = df_result.drop_duplicates(subset=['aid', 'textClassification'])
-            
-            # Clean up text: replace multiple spaces and line breaks
-            df_result['text'] = df_result['text'].str.replace(r'\s+', ' ', regex=True)
-            df_result['text'] = df_result['text'].str.replace('\r\n', '||')
-            
-            # Reorder columns
-            df_result = df_result[['aid', 'company', 'textClassification', 'text', 'language', 'deleteTexts', 'valid_from_text', 'valid_to_text']]
-            
-            # Create output filename based on classification
-            output_file = OUTPUT_DIR / f"sku_text_en_{classification.lower()}.csv"
-            df_result.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
-            output_files.append(output_file)
-            
-        # Process Pflegehinweise file after all classifications are done
-        pflegehinweise_file = OUTPUT_DIR / "sku_text_en_pflegehinweise.csv"
-        if pflegehinweise_file.exists():
-            df_pflegehinweise = pd.read_csv(pflegehinweise_file, sep=';', encoding='utf-8-sig')
-            
-            # Add keywords to specific positions in the text if they're not already present
-            if 'text' in df_pflegehinweise.columns:
-                # Ensure text is properly encoded and clean
-                df_pflegehinweise['text'] = df_pflegehinweise['text'].astype(str)
-                
-                # Add 'Waschen:' at the beginning of the text with consistent formatting
-                df_pflegehinweise['text'] = 'Waschen: || ' + df_pflegehinweise['text']
-            
                 # Add 'Reinigung: ||' before 'Keine chemische' if it exists
                 df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
                     lambda x: x.replace('Keine chemische', '|| Reinigung: || Keine chemische')
@@ -1318,14 +947,14 @@ def import_sku_text_en():
                 
                 # Save the updated file
                 df_pflegehinweise.to_csv(pflegehinweise_file, index=False, encoding='utf-8-sig', sep=';')
-                print(f"English care instructions with keywords added and saved to: {pflegehinweise_file}")
+                print(f"Care instructions with keywords added and saved to: {pflegehinweise_file}")
             else:
                 print(f"Warning: 'text' column not found in {pflegehinweise_file}")
         
         return output_files if output_files else None
         
     except Exception as e:
-        print(f"Error in import_sku_text_en: {e}")
+        print(f"Error in import_sku_text: {e}")
         import traceback
         traceback.print_exc()
         raise
@@ -2745,87 +2374,35 @@ def import_stock_lager(diff_areas=None):
         traceback.print_exc()
         return None, None, None
     
-
-def import_business_partner(diff_partner_ids=None):
-    """
-    Import business partner data from MDB database and export to CSV.
     
-    Args:
-        diff_partner_ids (list, optional): List of partner IDs to filter. If None, all partners are included.
-        
-    Returns:
-        Path: Path to the generated CSV file, or None if an error occurred
-    """
-    try:
-        # Import diff_partner_ids only when needed
-        if diff_partner_ids is None:
-            try:
-                from run_comparison_standalone import diff_partner_ids as _diff_ids
-                diff_partner_ids = _diff_ids
-            except (ImportError, AttributeError):
-                pass
-
-        # Read the SQL query from file
-        sql_file = Path(__file__).parent.parent / 'sql' / 'get_business_partner.sql'
-        
-        # Check if SQL file exists
-        if not sql_file.exists():
-            print(f"Warning: SQL file not found at {sql_file}")
-            # Create a placeholder file if it doesn't exist
-            with open(sql_file, 'w', encoding='utf-8') as f:
-                f.write("SELECT * FROM tAdressen") # Placeholder query
-            print(f"Created placeholder SQL file at {sql_file}")
-
-        with open(sql_file, 'r', encoding='utf-8') as f:
-            sql_query = f.read()
-            
-        # Execute the query
-        df = pd.DataFrame(execute_query(sql_query))
-        
-        if df.empty:
-            print("No business partner data found")
-            return None
-            
-        # Filter by diff_partner_ids if provided
-        if diff_partner_ids and len(diff_partner_ids) > 0:
-            print(f"Filtering {len(diff_partner_ids)} business partners")
-            # Assume 'AdrId' is the identifier column in tAdressen
-            if 'AdrId' in df.columns:
-                df['AdrId'] = df['AdrId'].astype(str)
-                valid_ids = {str(pid) for pid in diff_partner_ids}
-                df = df[df['AdrId'].isin(valid_ids)]
-            else:
-                print("Warning: 'AdrId' column not found, cannot apply filter")
-            
-        if df.empty:
-            print("No business partner data found after filtering")
-            return None
-
-        # Process the data
-        # Add default columns similar to other import functions
-        df['company'] = 1
-        
-        # Define output file
-        output_file = OUTPUT_DIR / "BUSINESS_PARTNER.csv"
-        
-        # Save to CSV
-        df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
-        print(f"Exported {len(df)} business partner records to: {output_file}")
-        
-        return output_file if output_file.exists() else None
-            
-    except Exception as e:
-        print(f"Error in import_business_partner: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
-
 # This allows the script to be run directly
 if __name__ == "__main__":
-    import_sku_text()
+    """import_sku_basis()
+    import_sku_classification()
+    import_sku_keyword()
+    import_artikel_basis()
+    import_artikel_classification()
+    import_artikel_zuordnung()
+    import_artikel_keyword()
     import_artikel_text()
-    import_artikel_text_en()
-    import_sku_text_en()
+    import_sku_text()
+    import_artikel_variant()
+    import_sku_variant()
+    import_artikel_pricestaffeln()
+    import_artikel_basicprice()
+    import_artikel_preisstufe_3_7()
+    import_sku_EAN()
+    import_sku_gebinde()
+    import_order()
+    import_order_pos()
+    import_order_classification()
+    import_order()
+    import_order_are_15()
+    import_order_pos_are_15()
+    import_order_pos()
+    update_sku()"""
+    import_stock_lager()
+    import_sku_basis()
     
     
     

@@ -1,0 +1,3 @@
+txId;txIdExternal;supplier_id;clerk;ex_txDate;txDate;company;currency;order_auto;txDef;company
+000252023B004;PR1650CD0049;00025;Sophia.Ditzell;20230111;20230501;0;USD;1;Kontrakt_EWOrder;1
+000252023B018;PR3000CD0185;00025;Sophia.Ditzell;20230111;20230501;0;USD;1;Kontrakt_EWOrder;1

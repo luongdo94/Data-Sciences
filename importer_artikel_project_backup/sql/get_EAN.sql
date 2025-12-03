@@ -14,10 +14,8 @@ FROM
     INNER JOIN t_Art_MegaBase ON t_Art_Mega_SKU.ArtikelNeu = t_Art_MegaBase.ArtikelNeu
 WHERE
     (
-        (
-            (tEANCodes.ArtNr = t_Art_Mega_SKU.ArtNr)
-            OR (tEANCodes.ArtNr = t_Art_Mega_SKU.ArtNr + 'S')
-        )
+        (tEANCodes.ArtNr = t_Art_Mega_SKU.ArtNr)
+        OR (tEANCodes.ArtNr = t_Art_Mega_SKU.ArtNr + 'S')
         AND tEANCodes.QtyId = 1
     )
     AND t_Art_Mega_SKU.FarbeNeu NOT LIKE '%/%'
