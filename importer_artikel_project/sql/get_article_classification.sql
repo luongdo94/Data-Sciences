@@ -10,7 +10,8 @@ SELECT m.ArtBasis AS aid, m.Produktgruppe as product_group, m.Marke as Marke,
        f.flag_transfer as transfer, f.flag_premium as premium, 
        f.flag_extras as extras, f.flag_outdoor as outdoor, 
        f.flag_plussize as oversize, f.isNoLabel as label, 
-       f.isErw as erw 
+       f.isErw as erw,
+       f.flag_specialoffer as specialoffer
 FROM [t_Art_MegaBase] m 
 INNER JOIN [t_Art_Flags] f ON m.ArtikelNeu = f.ArtikelNeu 
 WHERE m.Marke IN ('Corporate', 'EXCD', 'XO')

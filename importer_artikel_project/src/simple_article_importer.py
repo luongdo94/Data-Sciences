@@ -20,10 +20,10 @@ OUTPUT_DIR = project_root / 'data' / 'output'
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Set up console encoding
-if sys.stdout.encoding != 'utf-8':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-if sys.stderr.encoding != 'utf-8':
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+# if sys.stdout.encoding != 'utf-8':
+#     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+# if sys.stderr.encoding != 'utf-8':
+#     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 def extract_numbers(value):
     #Extract numbers from a string
     if pd.isna(value):
@@ -203,7 +203,9 @@ def import_sku_classification(diff=None):
             ('Ursprungsland', df['Ursprungsland'].str[:2] if 'Ursprungsland' in df else ''),
             ('Fabric_Melange', df['ColorMelange'] if 'ColorMelange' in df else ''),
             ('Zolltext_VZTA_aktiv_bis', pd.to_datetime(df['VZTA aktiv bis']).dt.strftime('%Y%m%d') if 'VZTA aktiv bis' in df else ''),
-            ('Zolltext_VZTA_aktiv_von', pd.to_datetime(df['VZTA aktiv von']).dt.strftime('%Y%m%d') if 'VZTA aktiv von' in df else '')
+            ('Zolltext_VZTA_aktiv_von', pd.to_datetime(df['VZTA aktiv von']).dt.strftime('%Y%m%d') if 'VZTA aktiv von' in df else ''),
+            ('New_Year', df['newyear'] if 'newyear' in df else ''),   
+            ('Special_Offer', abs(df['specialoffer']) if 'specialoffer' in df else 0),
         ]
         
         # Add features to dataframe
@@ -212,7 +214,7 @@ def import_sku_classification(diff=None):
             df[f'feature_value[{i}]'] = value
         
         # Select and reorder columns
-        feature_cols = [f'{x}[{i}]' for i in range(33) for x in ('feature', 'feature_value')]
+        feature_cols = [f'{x}[{i}]' for i in range(35) for x in ('feature', 'feature_value')]
         columns = ['aid', 'company', 'classification_system', 'product_group', 'product_group_superior'] + feature_cols
         
         output_file = OUTPUT_DIR / "sku_classification.csv"
@@ -421,7 +423,9 @@ def import_artikel_classification(diff1=None):
             ('Outdoor', lambda x: abs(x['outdoor'])),
             ('Size_Oversize', lambda x: abs(x['oversize'])),
             ('Geschlecht', 'Gender'),
-            ('Brand_Label', lambda x: abs(x['label']))
+            ('Brand_Label', lambda x: abs(x['label'])),
+            ('New_Year', df['New_Year'] if 'New_Year' in df else ''),   
+            ('Special_Offer', lambda x: abs(x['specialoffer']) if 'specialoffer' in x else 0),
         ]
         
         # Create result DataFrame with required structure
@@ -904,7 +908,7 @@ def import_artikel_text_en(diff1=None):
                 # Define the keywords to add with their patterns
                 keywords = {
                     'Trocknen': '||Trocknen',
-                    'mÃ¤ÃŸig': '||BÃ¼geln',
+                    'mäßig': '||Bügeln',
                     'Reinigen': '||Reinigen'
                 }
                 
@@ -914,28 +918,28 @@ def import_artikel_text_en(diff1=None):
                     if keyword == 'BÃ¼geln':
                         # First check for 'nicht heiÃŸ bÃ¼geln'
                         df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                            lambda x: x.replace('nicht heiÃŸ bÃ¼geln', ' ||BÃ¼geln: || nicht heiÃŸ bÃ¼geln')
-                            if 'nicht heiÃŸ bÃ¼geln' in x and 'BÃ¼geln:' not in x
+                            lambda x: x.replace('nicht heiß bügeln', ' ||Bügeln: || nicht heiß bügeln')
+                            if 'nicht heiß bügeln' in x and 'Bügeln:' not in x
                             else x
                         )
                         # Then check for 'nicht bÃ¼geln' if 'nicht heiÃŸ bÃ¼geln' wasn't found
                         df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                            lambda x: x.replace('nicht bÃ¼geln', ' ||BÃ¼geln: || nicht bÃ¼geln')
-                            if 'nicht bÃ¼geln' in x and 'BÃ¼geln:' not in x
+                            lambda x: x.replace('nicht bügeln', ' ||Bügeln: || nicht bügeln')
+                            if 'nicht bügeln' in x and 'Bügeln:' not in x
                             else x
                         )
                         # Handle standalone 'BÃ¼geln' section
                         df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                            lambda x: x.replace('BÃ¼geln:', ' ||BÃ¼geln: ||') if 'BÃ¼geln:' in x and '||BÃ¼geln: ||' not in x else x
+                            lambda x: x.replace('Bügeln:', ' ||Bügeln: ||') if 'Bügeln:' in x and '||Bügeln: ||' not in x else x
                         )
                         # Handle case where 'BÃ¼geln' appears without a colon
                         df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                            lambda x: x.replace(' BÃ¼geln ', ' ||BÃ¼geln: || ') if ' BÃ¼geln ' in x and 'BÃ¼geln:' not in x and '||BÃ¼geln: ||' not in x else x
+                            lambda x: x.replace(' Bügeln ', ' ||Bügeln: || ') if ' Bügeln ' in x and 'Bügeln:' not in x and '||Bügeln: ||' not in x else x
                         )
                         # Finally check for 'mÃ¤ÃŸig' if neither of the above were found
                         df_pflegehinweise['text'] = df_pflegehinweise['text'].apply(
-                            lambda x: x.replace('mÃ¤ÃŸig', '||BÃ¼geln: || mÃ¤ÃŸig')
-                            if 'mÃ¤ÃŸig' in x and f' {keyword}:' not in x
+                            lambda x: x.replace('mässig', '||Bügeln: || mässig')
+                            if 'mässig' in x and f' {keyword}:' not in x
                             else x
                         )
                     else:
@@ -1676,7 +1680,7 @@ def import_artikel_pricestaffeln():
             # Fill in the prices
             for i in range(3):
                 staffel_1_3[price_cols[i]] = staffel_1_3['aid'].map(
-                    prices.apply(lambda x: str(x[i]) if i < len(x) else '')
+                    prices.apply(lambda x: str(x[i]).replace('.', ',') if i < len(x) else '')
                 )
         
         # Process Preisstaffel 2-3
@@ -1699,7 +1703,7 @@ def import_artikel_pricestaffeln():
             # Fill in the prices for all three tiers
             for i in range(3):
                 staffel_2_3[price_cols[i]] = staffel_2_3['aid'].map(
-                    prices.apply(lambda x: str(x[i]) if i < len(x) else (str(x[-1]) if x else ''))
+                    prices.apply(lambda x: str(x[i]).replace('.', ',') if i < len(x) else (str(x[-1]).replace('.', ',') if x else ''))
                 )
         
         # Combine both staffels
@@ -2822,10 +2826,8 @@ def import_business_partner(diff_partner_ids=None):
 
 # This allows the script to be run directly
 if __name__ == "__main__":
-    import_sku_text()
-    import_artikel_text()
-    import_artikel_text_en()
-    import_sku_text_en()
+    import_artikel_classification()
+    import_sku_classification()
     
     
     

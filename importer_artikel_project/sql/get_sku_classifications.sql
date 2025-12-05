@@ -38,7 +38,9 @@ SELECT
     f.flag_outdoor AS outdoor,
     f.flag_plussize AS oversize,
     f.isNoLabel AS label,
-    f.isErw AS erw
+    f.isErw AS erw,
+    f.flag_specialoffer AS specialoffer,
+    sku.New_Year as newyear
 FROM ((t_Art_Mega_SKU sku
 INNER JOIN t_Art_MegaBase m ON sku.ArtikelNeu = m.ArtikelNeu)
 INNER JOIN t_Art_Flags f ON m.ArtikelNeu = f.ArtikelNeu)

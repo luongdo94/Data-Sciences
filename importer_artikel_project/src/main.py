@@ -42,9 +42,9 @@ def safe_rename(src, dst, display_name):
             if dst_path.exists():
                 dst_path.unlink()
             src_path.rename(dst_path)
-            print(f"✓ {display_name}")
+            print(f"[OK] {display_name}")
     except Exception as e:
-        print(f"✗ Error renaming {display_name}: {e}")
+        print(f"[ERROR] Error renaming {display_name}: {e}")
 
 def get_diff(diff_name='diff'):
     """Get diff from comparison module"""

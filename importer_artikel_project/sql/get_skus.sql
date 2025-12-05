@@ -42,6 +42,8 @@ SELECT
                 f.flag_plussize AS oversize,
                 f.isNoLabel AS label,
                 f.isErw AS erw,
+                f.flag_specialoffer AS specialoffer,
+                sku.New_Year as newyear,
                 t.WebVEText as Oeko_MadeInGreen
             FROM 
                 ((t_Art_Mega_SKU sku
