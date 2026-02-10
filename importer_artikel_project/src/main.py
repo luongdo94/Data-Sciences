@@ -16,7 +16,8 @@ from src.simple_article_importer import (
     import_artikel_basicprice, import_artikel_pricestaffeln,
     import_sku_EAN, import_sku_gebinde, update_sku,
     import_order, import_order_are_15, import_order_pos, import_order_pos_are_15, import_order_classification,
-    import_artikel_text_en, import_sku_text_en
+    import_artikel_text_en, import_sku_text_en,
+    import_stock_lager, import_business_partner
 )
 from src.sku_color_processor import process_colors
 
@@ -236,6 +237,21 @@ def main():
         process_article_data()
         # Process Order data
         process_order_data()
+        
+        # Process Stock and Partner data
+        print("\n=== Processing Stock and Partner Data ===")
+        # Process Stock/Lager
+        stock_files = import_stock_lager()
+        if stock_files:
+            for file_path in stock_files:
+                if file_path and Path(file_path).exists():
+                    print(f"[OK] Stock data exported: {file_path.name}")
+                    
+        # Process Business Partner
+        partner_file = import_business_partner()
+        if partner_file and Path(partner_file).exists():
+             safe_rename(partner_file, OUTPUT_DIR / "BUSINESS_PARTNER_IMPORT.csv", "BUSINESS_PARTNER_IMPORT.csv")
+             
         print("\nAll data processing completed successfully!")
     except Exception as e:
         print(f"Error: {e}")

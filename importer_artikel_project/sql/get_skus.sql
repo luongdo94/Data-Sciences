@@ -43,6 +43,8 @@ SELECT
                 f.isNoLabel AS label,
                 f.isErw AS erw,
                 f.flag_specialoffer AS specialoffer,
+                f.flag_nolabel AS No_Label,
+                f.flag_60grad AS Grad_60,
                 sku.New_Year as newyear,
                 t.WebVEText as Oeko_MadeInGreen
             FROM 
@@ -55,3 +57,4 @@ SELECT
                 AND sku.ArtikelCode IN ({aid_placeholders})
                 AND sku.Hauptfarbe is not null
                 AND sku.FarbeNeu NOT LIKE '%/%'
+

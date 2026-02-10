@@ -171,41 +171,42 @@ def import_sku_classification(diff=None):
         
         # Define feature mappings
         features = [
-            ('Grammatur', df['Grammatur'].str.extract(r'(\d+)')[0] if 'Grammatur' in df else ''),
+            ('Grammatur', df['Grammatur'] if 'Grammatur' in df else ''),
             ('Oeko_MadeInGreen', df['Oeko_MadeInGreen'] if 'Oeko_MadeInGreen' in df else ''),
             ('Partnerlook', df['Artikel_Partner'].str[:4] if 'Artikel_Partner' in df else ''),
             ('Sortierung', df['sku_ArtSort'] if 'sku_ArtSort' in df else ''),
             ('Fabric_Herstellung', df['Fabric_Herstellung'] if 'Fabric_Herstellung' in df else ''),
             ('Material', df['Zusammensetzung'] if 'Zusammensetzung' in df else ''),
-            ('Workwear', abs(df['workwear']) if 'workwear' in df else 0),
-            ('Produktlinie_Veredelung', abs(df['veredelung']) if 'veredelung' in df else 0),
-            ('Produktlinie_Veredelungsart_Discharge', abs(df['discharge']) if 'discharge' in df else 0),
-            ('Produktlinie_Veredelungsart_DTG', abs(df['dtg']) if 'dtg' in df else 0),
-            ('Produktlinie_Veredelungsart_DYOJ', abs(df['dyoj']) if 'dyoj' in df else 0),
-            ('Produktlinie_Veredelungsart_DYOP', abs(df['dyop']) if 'dyop' in df else 0),
-            ('Produktlinie_Veredelungsart_Flock', abs(df['flock']) if 'flock' in df else 0),
-            ('Produktlinie_Veredelungsart_Siebdruck', abs(df['siebdruck']) if 'siebdruck' in df else 0),
-            ('Produktlinie_Veredelungsart_Stick', abs(df['stick']) if 'stick' in df else 0),
-            ('Produktlinie_Veredelungsart_Sublimationsdruck', abs(df['sublimation']) if 'sublimation' in df else 0),
-            ('Produktlinie_Veredelungsart_Transferdruck', abs(df['transfer']) if 'transfer' in df else 0),
-            ('Brand_Premium_Item', abs(df['premium']) if 'premium' in df else 0),
-            ('Extras', abs(df['extras']) if 'extras' in df else 0),
-            ('Kids', 1 - abs(df['erw']) if 'erw' in df else 0),
-            ('Outdoor', abs(df['outdoor']) if 'outdoor' in df else 0),
-            ('Size_Oversize', abs(df['oversize']) if 'oversize' in df else 0),
+            ('Workwear', abs(df['workwear'].fillna(0)).astype(int) if 'workwear' in df else 0),
+            ('Produktlinie_Veredelung', abs(df['veredelung'].fillna(0)).astype(int) if 'veredelung' in df else 0),
+            ('Produktlinie_Veredelungsart_Discharge', abs(df['discharge'].fillna(0)).astype(int) if 'discharge' in df else 0),
+            ('Produktlinie_Veredelungsart_DTG', abs(df['dtg'].fillna(0)).astype(int) if 'dtg' in df else 0),
+            ('Produktlinie_Veredelungsart_DYOJ', abs(df['dyoj'].fillna(0)).astype(int) if 'dyoj' in df else 0),
+            ('Produktlinie_Veredelungsart_DYOP', abs(df['dyop'].fillna(0)).astype(int) if 'dyop' in df else 0),
+            ('Produktlinie_Veredelungsart_Flock', abs(df['flock'].fillna(0)).astype(int) if 'flock' in df else 0),
+            ('Produktlinie_Veredelungsart_Siebdruck', abs(df['siebdruck'].fillna(0)).astype(int) if 'siebdruck' in df else 0),
+            ('Produktlinie_Veredelungsart_Stick', abs(df['stick'].fillna(0)).astype(int) if 'stick' in df else 0),
+            ('Produktlinie_Veredelungsart_Sublimationsdruck', abs(df['sublimation'].fillna(0)).astype(int) if 'sublimation' in df else 0),
+            ('Produktlinie_Veredelungsart_Transferdruck', abs(df['transfer'].fillna(0)).astype(int) if 'transfer' in df else 0),
+            ('Brand_Premium_Item', abs(df['premium'].fillna(0)).astype(int) if 'premium' in df else 0),
+            ('Extras', abs(df['extras'].fillna(0)).astype(int) if 'extras' in df else 0),
+            ('Kids', 1 - abs(df['erw'].fillna(0)).astype(int) if 'erw' in df else 0),
+            ('Outdoor', abs(df['outdoor'].fillna(0)).astype(int) if 'outdoor' in df else 0),
+            ('Size_Oversize', abs(df['oversize'].fillna(0)).astype(int) if 'oversize' in df else 0),
             ('Geschlecht', df['Gender'].replace('Kinder', '') if 'Gender' in df else ''),
-            ('Brand_Label', abs(df['label']) if 'label' in df else 0),
+            ('No_Label', abs(df['No_Label'].fillna(0)).astype(int) if 'No_Label' in df else 0),
+            ('Grad_60', abs(df['Grad_60'].fillna(0)).astype(int) if 'Grad_60' in df else 0),
             ('Colour_Farbe', df['Farbe'] if 'Farbe' in df else ''),
             ('Colour_Farbgruppe', df['Farbgruppe'] if 'Farbgruppe' in df else ''),
             ('Size_Größe', df['Größe'] if 'Größe' in df else ''),
             ('Size_Größenspiegel', df['Größenspiegel'] if 'Größenspiegel' in df else ''),
-            ('Colour_zweifarbig', df['zweifarbig'] if 'zweifarbig' in df else ''),
+            ('Colour_zweifarbig', abs(df['zweifarbig'].fillna(0)).astype(int) if 'zweifarbig' in df else ''),
             ('Ursprungsland', df['Ursprungsland'].str[:2] if 'Ursprungsland' in df else ''),
-            ('Fabric_Melange', df['ColorMelange'] if 'ColorMelange' in df else ''),
+            ('Fabric_Melange', abs(df['ColorMelange'].fillna(0)).astype(int) if 'ColorMelange' in df else ''),
             ('Zolltext_VZTA_aktiv_bis', pd.to_datetime(df['VZTA aktiv bis']).dt.strftime('%Y%m%d') if 'VZTA aktiv bis' in df else ''),
             ('Zolltext_VZTA_aktiv_von', pd.to_datetime(df['VZTA aktiv von']).dt.strftime('%Y%m%d') if 'VZTA aktiv von' in df else ''),
             ('New_Year', df['newyear'] if 'newyear' in df else ''),   
-            ('Special_Offer', abs(df['specialoffer']) if 'specialoffer' in df else 0),
+            ('Special_Offer', abs(df['specialoffer'].fillna(0)).astype(int) if 'specialoffer' in df else 0),
         ]
         
         # Add features to dataframe
@@ -214,7 +215,7 @@ def import_sku_classification(diff=None):
             df[f'feature_value[{i}]'] = value
         
         # Select and reorder columns
-        feature_cols = [f'{x}[{i}]' for i in range(35) for x in ('feature', 'feature_value')]
+        feature_cols = [f'{x}[{i}]' for i in range(len(features)) for x in ('feature', 'feature_value')]
         columns = ['aid', 'company', 'classification_system', 'product_group', 'product_group_superior'] + feature_cols
         
         output_file = OUTPUT_DIR / "sku_classification.csv"
@@ -395,9 +396,6 @@ def import_artikel_classification(diff1=None):
         if df.empty:
             return None
         
-        # Process the data
-        df['Grammatur'] = df['Grammatur'].apply(extract_numbers)
-        
         # Define features mapping
         features = [
             ('Grammatur', 'Grammatur'),
@@ -406,26 +404,27 @@ def import_artikel_classification(diff1=None):
             ('Sortierung', 'ArtSort'),
             ('Fabric_Herstellung', 'Materialart'),
             ('Material', 'Zusammensetzung'),
-            ('Workwear', lambda x: abs(x['workwear'])),
-            ('Produktlinie_Veredelung', lambda x: abs(x['veredelung'])),
-            ('Produktlinie_Veredelungsart_Discharge', lambda x: abs(x['discharge'])),
-            ('Produktlinie_Veredelungsart_DTG', lambda x: abs(x['dtg'])),
-            ('Produktlinie_Veredelungsart_DYOJ', lambda x: abs(x['dyoj'])),
-            ('Produktlinie_Veredelungsart_DYOP', lambda x: abs(x['dyop'])),
-            ('Produktlinie_Veredelungsart_Flock', lambda x: abs(x['flock'])),
-            ('Produktlinie_Veredelungsart_Siebdruck', lambda x: abs(x['siebdruck'])),
-            ('Produktlinie_Veredelungsart_Stick', lambda x: abs(x['stick'])),
-            ('Produktlinie_Veredelungsart_Sublimationsdruck', lambda x: abs(x['sublimation'])),
-            ('Produktlinie_Veredelungsart_Transferdruck', lambda x: abs(x['transfer'])),
-            ('Brand_Premium_Item', lambda x: abs(x['premium'])),
-            ('Extras', lambda x: abs(x['extras'])),
-            ('Kids', lambda x: 1 - abs(x['erw'])),
-            ('Outdoor', lambda x: abs(x['outdoor'])),
-            ('Size_Oversize', lambda x: abs(x['oversize'])),
+            ('Workwear', lambda x: int(abs(x['workwear'])) if pd.notna(x.get('workwear')) else 0),
+            ('Produktlinie_Veredelung', lambda x: int(abs(x['veredelung'])) if pd.notna(x.get('veredelung')) else 0),
+            ('Produktlinie_Veredelungsart_Discharge', lambda x: int(abs(x['discharge'])) if pd.notna(x['discharge']) else 0),
+            ('Produktlinie_Veredelungsart_DTG', lambda x: int(abs(x['dtg'])) if pd.notna(x['dtg']) else 0),
+            ('Produktlinie_Veredelungsart_DYOJ', lambda x: int(abs(x['dyoj'])) if pd.notna(x['dyoj']) else 0),
+            ('Produktlinie_Veredelungsart_DYOP', lambda x: int(abs(x['dyop'])) if pd.notna(x['dyop']) else 0),
+            ('Produktlinie_Veredelungsart_Flock', lambda x: int(abs(x['flock'])) if pd.notna(x['flock']) else 0),
+            ('Produktlinie_Veredelungsart_Siebdruck', lambda x: int(abs(x['siebdruck'])) if pd.notna(x['siebdruck']) else 0),
+            ('Produktlinie_Veredelungsart_Stick', lambda x: int(abs(x['stick'])) if pd.notna(x['stick']) else 0),
+            ('Produktlinie_Veredelungsart_Sublimationsdruck', lambda x: int(abs(x['sublimation'])) if pd.notna(x['sublimation']) else 0),
+            ('Produktlinie_Veredelungsart_Transferdruck', lambda x: int(abs(x['transfer'])) if pd.notna(x['transfer']) else 0),
+            ('Brand_Premium_Item', lambda x: int(abs(x['premium'])) if pd.notna(x['premium']) else 0),
+            ('Extras', lambda x: int(abs(x['extras'])) if pd.notna(x['extras']) else 0),
+            ('Kids', lambda x: 1 - int(abs(x['erw'])) if pd.notna(x['erw']) else 0),
+            ('Outdoor', lambda x: int(abs(x['outdoor'])) if pd.notna(x['outdoor']) else 0),
+            ('Size_Oversize', lambda x: int(abs(x['oversize'])) if pd.notna(x['oversize']) else 0),
             ('Geschlecht', 'Gender'),
-            ('Brand_Label', lambda x: abs(x['label'])),
+            ('No_Label', lambda x: int(abs(x['No_Label'])) if pd.notna(x['No_Label']) else 0),
+            ('Grad_60', lambda x: int(abs(x['Grad_60'])) if pd.notna(x['Grad_60']) else 0),
             ('New_Year', df['New_Year'] if 'New_Year' in df else ''),   
-            ('Special_Offer', lambda x: abs(x['specialoffer']) if 'specialoffer' in x else 0),
+            ('Special_Offer', lambda x: int(abs(x['specialoffer'])) if 'specialoffer' in x and pd.notna(x['specialoffer']) else 0),
         ]
         
         # Create result DataFrame with required structure
@@ -853,7 +852,7 @@ def import_artikel_text_en(diff1=None):
             df_result['language'] = 'EN'
             df_result['textClassification'] = classification
             df_result['text'] = text_content.str.strip()  # Remove extra whitespace
-            df_result['deleteTexts'] = 0
+            df_result['deleteTexts'] = 1
             df_result['valid_from_text'] = datetime.now().strftime('%Y%m%d')
             df_result['valid_to_text'] = ''
             
@@ -1217,7 +1216,7 @@ def import_sku_text_en():
             df_result['language'] = 'EN'
             df_result['textClassification'] = classification
             df_result['text'] = text_content.str.strip()  # Remove extra whitespace
-            df_result['deleteTexts'] = 0
+            df_result['deleteTexts'] = 1
             df_result['valid_from_text'] = datetime.now().strftime('%Y%m%d')
             df_result['valid_to_text'] = ''
             
@@ -1356,7 +1355,7 @@ def import_artikel_variant():
         #df['classification_system'] = 'Warengruppensystem'
         
         # Handle encoding for 'GrÃ¶ÃŸe' column - check both possible encodings
-        groesse_col = 'GrÃ¶ÃŸe' if 'GrÃ¶ÃŸe' in df.columns else 'GrÃƒÂ¶ÃƒÅ¸e'
+        groesse_col = 'Größe' if 'Größe' in df.columns else 'Größe'
         farbe_col = 'Farbe' if 'Farbe' in df.columns else 'Farbe'  # Keep as is, but check if exists
         
         if groesse_col not in df.columns:
@@ -1369,7 +1368,7 @@ def import_artikel_variant():
         
         # Define attributes mapping with proper values
         attributes = [
-            ('Size_GrÃ¶ÃŸe', df[groesse_col]),
+            ('Size_Größe', df[groesse_col]),
             ('Colour_Farbe', df[farbe_col]),
         ]
         
@@ -2087,6 +2086,10 @@ def import_sku_EAN():
         df['QtyId'] = pd.to_numeric(df['QtyId'], errors='coerce').astype(int)
         df['Verpackungseinheit'] = df['Verpackungseinheit'].astype(str)
         df['IsEndsWithS'] = df['IsEndsWithS'].astype(int)
+        
+        # Filter out EANs where Verpackungseinheit is '1' and QtyId is 2
+        df = df[~((df['Verpackungseinheit'] == '1') & (df['QtyId'] == 2))]
+        
         # Set default unit to 'Stk' for QtyId = 1
         df.loc[df['QtyId'] == 1, 'Verpackungseinheit'] = 'Stk'
         df.loc[df['IsEndsWithS'] == 1, 'Verpackungseinheit'] = 'SP'
@@ -2806,15 +2809,99 @@ def import_business_partner(diff_partner_ids=None):
             return None
 
         # Process the data
-        # Add default columns similar to other import functions
         df['company'] = 1
+        df['currency'] = 'EUR'
+        df['is_company'] = 1
         
-        # Define output file
+            
+        if 'CodeLang' in df.columns:
+            # Convert CodeLang to language: 0 -> 'DE', 826 -> 'EN'
+            df['language'] = df['CodeLang'].apply(lambda x: 'de' if x == 0 or x == '0' else ('en' if x == 826 or x == '826' else 'de'))
+        else:
+             df['language'] = 'de'
+
+        # Proper renaming of columns
+        rename_map = {
+            'Name2': 'company_name1',
+            'Name3': 'company_name2',
+            'SteuerNr': 'Tax_Number',
+            'UStID': 'vat_id',
+            'LandKfz': 'country',
+            'KNummer': 'customer_id'
+        }
+        df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns}, inplace=True)
+        
+        # Define EU countries list
+        eu_countries = ['BE', 'BG', 'CZ', 'DK', 'EE', 'IE', 'EL', 'ES', 'FR', 'HR', 'IT', 'CY', 'LV', 'LT', 'LU', 'HU', 'MT', 'NL', 'AT', 'PL', 'PT', 'RO', 'SI', 'SK', 'FI', 'SE']
+        
+        # Add tax_def column
+        if 'country' in df.columns:
+            def get_tax_def(country_code):
+                if not country_code or pd.isna(country_code):
+                    return 'Inland' # Default fallback
+                country_code = str(country_code).upper()
+                if country_code == 'DE':
+                    return 'Inland'
+                elif country_code in eu_countries:
+                    return 'EU'
+                else:
+                    return 'Drittland'
+            df['tax_def'] = df['country'].apply(get_tax_def)
+        else:
+             df['tax_def'] = 'Inland'
+
+        # Ensure customer_id is 5 characters long with leading zeros
+        if 'customer_id' in df.columns:
+            df['customer_id'] = df['customer_id'].astype(str).str.zfill(5)
+            
         output_file = OUTPUT_DIR / "BUSINESS_PARTNER.csv"
+        output_file_ma = OUTPUT_DIR / "BUSINESS_PARTNER_MA.csv"
         
-        # Save to CSV
-        df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
-        print(f"Exported {len(df)} business partner records to: {output_file}")
+        # Select only the required columns
+        columns_to_export = ['customer_id', 'company', 'is_company', 'company_name1', 'company_name2', 'Tax_Number', 'vat_id', 'country', 'language', 'currency', 'tax_def']
+        # Filter to only existing columns to avoid KeyErrors
+        # Note: We need 'KGruppe' for filtering, so we keep it temporarily if it exists
+        temp_cols = [c for c in columns_to_export if c in df.columns]
+        if 'KGruppe' in df.columns:
+            temp_cols.append('KGruppe')
+            
+        df_export = df[list(set(temp_cols))]
+        
+        # Ensure customer_id is 5 chars (it was already processed in df, but ensures consistency in slice)
+        if 'customer_id' in df_export.columns:
+             df_export['customer_id'] = df_export['customer_id'].astype(str).str.zfill(5)
+
+        # Remove duplicates
+        df_export = df_export.drop_duplicates()
+
+        # Split into MA and Others
+        if 'KGruppe' in df_export.columns:
+            df_ma = df_export[df_export['KGruppe'] == 'MA'].copy()
+            df_others = df_export[df_export['KGruppe'] != 'MA'].copy()
+            
+            # Drop KGruppe before saving as it is not in the requested export list
+            if 'KGruppe' in df_ma.columns:
+                df_ma = df_ma.drop(columns=['KGruppe'])
+            if 'KGruppe' in df_others.columns:
+                df_others = df_others.drop(columns=['KGruppe'])
+        else:
+            # If KGruppe not found, treat all as Others
+            df_ma = pd.DataFrame(columns=columns_to_export)
+            df_others = df_export
+        
+        # Save to CSVs
+        if not df_ma.empty:
+            df_ma = df_ma.copy()
+            df_ma['is_company'] = 0
+            df_ma.rename(columns={'company_name1': 'last_Name', 'company_name2': 'first_Name'}, inplace=True)
+            
+            # Export all columns for MA since names have changed (or filter if strictly needed)
+            df_ma.to_csv(output_file_ma, index=False, encoding='utf-8-sig', sep=';')
+            print(f"Exported {len(df_ma)} business partner records (MA) to: {output_file_ma}")
+
+        df_others = df_others[[c for c in columns_to_export if c in df_others.columns]]
+        df_others.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
+        print(f"Exported {len(df_others)} business partner records (Others) to: {output_file}")
         
         return output_file if output_file.exists() else None
             
@@ -2824,11 +2911,104 @@ def import_business_partner(diff_partner_ids=None):
         traceback.print_exc()
         return None
 
+def import_business_supplier(diff_partner_ids=None):
+    """
+    Import business supplier data from MDB database and export to CSV.
+    
+    Args:
+        diff_partner_ids (list, optional): List of partner IDs to filter. If None, all partners are included.
+        
+    Returns:
+        Path: Path to the generated CSV file, or None if an error occurred
+    """
+    try:
+        # Import diff_partner_ids only when needed
+        if diff_partner_ids is None:
+            try:
+                from run_comparison_standalone import diff_partner_ids as _diff_ids
+                diff_partner_ids = _diff_ids
+            except (ImportError, AttributeError):
+                pass
+        
+        # Read the SQL query from file
+        sql_file = Path(__file__).parent.parent / 'sql' / 'get_business_supplier.sql'
+        
+        # Check if SQL file exists
+        if not sql_file.exists():
+            print(f"Warning: SQL file not found at {sql_file}")
+            # Create a placeholder file if it doesn't exist
+            with open(sql_file, 'w', encoding='utf-8') as f:
+                f.write("SELECT * FROM tAdressen WHERE IsLieferant = -1") # Placeholder query
+            print(f"Created placeholder SQL file at {sql_file}")
+
+        with open(sql_file, 'r', encoding='utf-8') as f:
+            sql_query = f.read()
+            
+        # Execute the query
+        df = pd.DataFrame(execute_query(sql_query))
+        
+        if df.empty:
+            print("No business supplier data found")
+            return None
+            
+        # Filter by diff_partner_ids if provided
+        if diff_partner_ids and len(diff_partner_ids) > 0:
+            print(f"Filtering {len(diff_partner_ids)} business suppliers")
+            # Assume 'AdrId' is the identifier column in tAdressen
+            if 'AdrId' in df.columns:
+                df['AdrId'] = df['AdrId'].astype(str)
+                valid_ids = {str(pid) for pid in diff_partner_ids}
+                df = df[df['AdrId'].isin(valid_ids)]
+            else:
+                print("Warning: 'AdrId' column not found, cannot apply filter")
+            
+        if df.empty:
+            print("No business supplier data found after filtering")
+            return None
+
+        # Process the data
+        df['company'] = 1
+        df['is_company'] = 1
+
+        # Proper renaming of columns
+        rename_map = {
+            'AdrNr': 'supplier_id',
+            'AdrName1': 'company_name1',
+            'AdrBem': 'company_name2',
+            'Landkfz' : 'country',
+            'CurrCode' : 'currency',
+            'CodeLang' : 'language',
+            'SteuerNr' : 'Tax_Number',
+            'UStIdNr' : 'vat_id'
+        }
+        df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns}, inplace=True)
+        
+        # Define output file
+        output_file = OUTPUT_DIR / "BUSINESS_SUPPLIER.csv"
+        
+        # Select only the required columns
+        columns_to_export = ['supplier_id', 'company', 'is_company', 'company_name1', 'company_name2', 'Tax_Number', 'vat_id', 'country', 'language', 'currency']
+        # Filter to only existing columns to avoid KeyErrors
+        df_export = df[[col for col in columns_to_export if col in df.columns]]
+        
+        # Remove duplicates
+        df_export = df_export.drop_duplicates()
+        
+        # Save to CSV
+        df_export.to_csv(output_file, index=False, encoding='utf-8-sig', sep=';')
+        print(f"Exported {len(df_export)} business supplier records to: {output_file}")
+        
+        return output_file if output_file.exists() else None
+            
+    except Exception as e:
+        print(f"Error in import_business_supplier: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
 # This allows the script to be run directly
 if __name__ == "__main__":
-    import_artikel_classification()
-    import_sku_classification()
-    
-    
-    
+    import_business_supplier()
+    import_business_partner()
+
 

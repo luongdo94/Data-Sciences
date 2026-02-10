@@ -18,10 +18,10 @@ WHERE
             (tEANCodes.ArtNr = t_Art_Mega_SKU.ArtNr)
             OR (tEANCodes.ArtNr = t_Art_Mega_SKU.ArtNr + 'S')
         )
-        AND tEANCodes.QtyId = 1
     )
     AND t_Art_Mega_SKU.FarbeNeu NOT LIKE '%/%'
     AND t_Art_MegaBase.Marke IN ('Corporate', 'EXCD', 'XO')
     AND t_Art_Mega_SKU.Hauptfarbe IS NOT NULL
+    AND NOT (RIGHT(Trim(tEANCodes.ArtNr), 1) = 'S' AND tEANCodes.QtyId <> 1)
 
         
