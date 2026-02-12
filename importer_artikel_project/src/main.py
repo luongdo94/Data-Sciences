@@ -8,17 +8,11 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 sys.path.append(str(Path(__file__).parent.parent))
 
 # Import from the local module since we're already in the src directory
-from src.simple_article_importer import (
-    import_sku_basis, import_sku_classification, import_sku_keyword,
-    import_artikel_basis, import_artikel_classification, import_artikel_zuordnung,
-    import_artikel_keyword, import_artikel_text, import_sku_text,
-    import_sku_variant, import_artikel_variant, import_artikel_preisstufe_3_7,
-    import_artikel_basicprice, import_artikel_pricestaffeln,
-    import_sku_EAN, import_sku_gebinde, update_sku,
-    import_order, import_order_are_15, import_order_pos, import_order_pos_are_15, import_order_classification,
-    import_artikel_text_en, import_sku_text_en,
-    import_stock_lager, import_business_partner
-)
+
+from src.article_importer_class import ArticleImporter
+from src.order_importer_class import OrderImporter
+from src.stock_importer_class import StockImporter
+from src.bp_importer_class import BusinessPartnerImporter
 from src.sku_color_processor import process_colors
 
 warnings.filterwarnings('ignore', category=UserWarning, 
@@ -57,13 +51,16 @@ def get_diff(diff_name='diff'):
 
 def process_sku_data():
     diff = get_diff('diff')
+    # Initialize importer
+    importer = ArticleImporter(diff=diff)
+    
     # Process core SKU data
     print("\n=== Processing Core SKU Data ===")
-    sku_basis_file = import_sku_basis()
-    sku_classification_file = import_sku_classification()
-    sku_keyword_file = import_sku_keyword()
-    sku_variant_file = import_sku_variant()
-    sku_update_file = update_sku()
+    sku_basis_file = importer.import_sku_basis()
+    sku_classification_file = importer.import_sku_classification()
+    sku_keyword_file = importer.import_sku_keyword()
+    sku_variant_file = importer.import_sku_variant()
+    sku_update_file = importer.update_sku()
     
     # Process price data
     print("\n=== Processing Price Data ===")
@@ -71,12 +68,9 @@ def process_sku_data():
     sku_pricestaffeln_file = None
     sku_price_file = None
     try:
-        sku_basicprice_file = import_artikel_basicprice(
-            basicprice_filename="PRICELIST - Artikel-Basispreis.csv",
-            validity_filename="Basispreis_validity_data.csv"
-        )
-        sku_pricestaffeln_file = import_artikel_pricestaffeln()
-        sku_price_file = import_artikel_preisstufe_3_7()
+        sku_basicprice_file = importer.import_artikel_basicprice() # Default args are fine or baked into class method if simplified
+        sku_pricestaffeln_file = importer.import_artikel_pricestaffeln()
+        sku_price_file = importer.import_artikel_preisstufe_3_7()
     except Exception as e:
         print(f"Error processing price data: {e}")
         import traceback
@@ -84,13 +78,16 @@ def process_sku_data():
     
     # Process additional SKU data
     print("\n=== Processing Additional SKU Data ===")
-    sku_text_files = import_sku_text() or []
-    sku_text_en_files = import_sku_text_en() or []
-    sku_EAN_file = import_sku_EAN()
+    sku_text_files = importer.import_sku_text() or []
+    sku_text_en_files = importer.import_sku_text_en() or []
+    sku_EAN_file = importer.import_sku_ean() # Note capitalization change if any, checked class method name is import_sku_ean
     
     # Get both output files from import_sku_gebinde()
-    sku_gebinde_ve_file = import_sku_gebinde()
+    # import_sku_gebinde returns the standard file path
+    importer.import_sku_gebinde()
+    
     sku_gebinde_standard_file = OUTPUT_DIR / "artikel_gebinde.csv"
+    sku_gebinde_ve_file = OUTPUT_DIR / "ARTICLE_PACKAGING_IMPORT - SKU-Gebindedaten_VE.csv"
     
     # Define all output files with their final names
     output_files = [
@@ -100,7 +97,7 @@ def process_sku_data():
         (sku_variant_file, "VARIANT_IMPORT - SKU-Variantenverknüpfung Import.csv"),
         (sku_update_file, "SKU_UPDATE - Artikel-Aktualisierung.csv"),
         (sku_EAN_file, "SKU_EAN - Artikel-EAN.csv"),
-        (sku_gebinde_ve_file, "ARTICLE_PACKAGING_IMPORT - SKU-Gebindedaten_VE.csv"),
+        (sku_gebinde_ve_file, "ARTICLE_PACKAGING_IMPORT - SKU-Gebindedaten_VE.csv") if sku_gebinde_ve_file.exists() else None,
         (sku_gebinde_standard_file, "ARTICLE_PACKAGING_IMPORT - SKU-Gebindedaten.csv") if sku_gebinde_standard_file.exists() else None,
         (OUTPUT_DIR / "sku_text_artikeltext.csv", "SKU_TEXT - Artikeltext.csv"),
         (OUTPUT_DIR / "sku_text_katalogtext.csv", "SKU_TEXT - Katalogtext.csv"),
@@ -174,13 +171,15 @@ def process_article_data():
     diff1 = get_diff('diff1')
     print(f"\nProcessing article data for {len(diff1)} AIDs..." if diff1 else "\nProcessing all article data...")
     
+    importer = ArticleImporter(diff1=diff1)
+    
     # Process article data
     files = [
-        (import_artikel_basis(), "ARTICLE - Artikel(Neuanlage).csv"),
-        (import_artikel_classification(), "ARTICLE_CLASSIFICATION - Artikel-Merkmale.csv"),
-        (import_artikel_zuordnung(), "ARTICLE_ASSIGNMENT - Artikel-Zuordnung.csv"),
-        (import_artikel_keyword(), "ARTICLE_KEYWORD - Artikel-Schlüsselworte.csv"),
-        (import_artikel_variant(), "ARTICLE_VARIANT - Artikel-Variantenverknüpfung Import.csv")
+        (importer.import_artikel_basis(), "ARTICLE - Artikel(Neuanlage).csv"),
+        (importer.import_artikel_classification(), "ARTICLE_CLASSIFICATION - Artikel-Merkmale.csv"),
+        (importer.import_artikel_zuordnung(), "ARTICLE_ASSIGNMENT - Artikel-Zuordnung.csv"),
+        (importer.import_artikel_keyword(), "ARTICLE_KEYWORD - Artikel-Schlüsselworte.csv"),
+        (importer.import_artikel_variant(), "ARTICLE_VARIANT - Artikel-Variantenverknüpfung Import.csv")
     ]
     
     # Rename files
@@ -189,8 +188,8 @@ def process_article_data():
             safe_rename(file_path, Path(file_path).parent / final_name, final_name)
     
     # Process text files
-    artikel_text_files = import_artikel_text() or []
-    artikel_text_en_files = import_artikel_text_en() or []
+    artikel_text_files = importer.import_artikel_text() or []
+    artikel_text_en_files = importer.import_artikel_text_en() or []
     
     # Process German text files
     for text_file in artikel_text_files:
@@ -209,13 +208,16 @@ def process_article_data():
 def process_order_data():
     print("\n=== Processing Order Data ===")
     try:
+        # Initialize importer
+        importer = OrderImporter()
+        
         # Process order data
         order_files = [
-            (import_order(), "CONTRACT - Kontrakte.csv"),
-            (import_order_are_15(), "CONTRACT - Kontrakte_15.csv"),
-            (import_order_pos(), "CONTRACT_ITEM - Kontraktpositionen.csv"),
-            (import_order_pos_are_15(), "CONTRACT_ITEM - Kontraktpositionen_15.csv"),
-            (import_order_classification(), "CONTRACT - Kontrakte-Klassifikation.csv")
+            (importer.import_order(), "CONTRACT - Kontrakte.csv"),
+            (importer.import_order_are_15(), "CONTRACT - Kontrakte_15.csv"),
+            (importer.import_order_pos(), "CONTRACT_ITEM - Kontraktpositionen.csv"),
+            (importer.import_order_pos_are_15(), "CONTRACT_ITEM - Kontraktpositionen_15.csv"),
+            (importer.import_order_classification(), "CONTRACT - Kontrakte-Klassifikation.csv")
         ]
         
         # Rename files
@@ -241,16 +243,41 @@ def main():
         # Process Stock and Partner data
         print("\n=== Processing Stock and Partner Data ===")
         # Process Stock/Lager
-        stock_files = import_stock_lager()
-        if stock_files:
-            for file_path in stock_files:
-                if file_path and Path(file_path).exists():
-                    print(f"[OK] Stock data exported: {file_path.name}")
+        try:
+            stock_importer = StockImporter()
+            stock_files = stock_importer.import_stock_lager()
+            if stock_files:
+                for file_path in stock_files:
+                    if file_path and Path(file_path).exists():
+                        print(f"[OK] Stock data exported: {file_path.name}")
+        except Exception as e:
+            print(f"[ERROR] Stock import failed: {e}")
                     
         # Process Business Partner
-        partner_file = import_business_partner()
+        print("\n=== Processing Business Partner Data ===")
+        bp_importer = BusinessPartnerImporter()
+        
+        # Main Partner Data
+        partner_file = bp_importer.import_business_partner()
         if partner_file and Path(partner_file).exists():
              safe_rename(partner_file, OUTPUT_DIR / "BUSINESS_PARTNER_IMPORT.csv", "BUSINESS_PARTNER_IMPORT.csv")
+
+        # Supplier Data
+        supplier_file = bp_importer.import_business_supplier()
+        if supplier_file and Path(supplier_file).exists():
+            print(f"[OK] Supplier data exported: {supplier_file.name}")
+            
+        # Address Data
+        address_file = bp_importer.import_address()
+        if address_file and Path(address_file).exists():
+            print(f"[OK] Address data exported: {address_file.name}")
+            
+        # Communication Data
+        comm_files = bp_importer.import_communication()
+        if comm_files:
+            for f in comm_files:
+                if f and Path(f).exists():
+                     print(f"[OK] Communication data exported: {f.name}")
              
         print("\nAll data processing completed successfully!")
     except Exception as e:

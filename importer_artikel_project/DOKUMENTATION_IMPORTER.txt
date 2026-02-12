@@ -1,0 +1,91 @@
+DOKUMENTATION / PROTOKOLL - IMPORTER FUNKTIONEN
+===============================================
+Diese Dokumentation beschreibt die Import-Funktionen, die für den Export von Geschäftspartner-, Lieferanten- und Kommunikationsdaten aus der MDB-Datenbank in CSV-Dateien zuständig sind.
+
+1. Funktion: import_business_partner(diff_partner_ids=None)
+-----------------------------------------------------------
+Zweck:
+    Importiert allgemeine Geschäftspartnerdaten (Kunden).
+
+Ablauf:
+    1.  Lädt SQL-Abfrage aus `sql/get_business_partner.sql`.
+    2.  Führt die Abfrage gegen die Datenbank aus.
+    3.  Filtert optional nach `diff_partner_ids`.
+    4.  Datenverarbeitung:
+        -   Setzt Standardwerte: `company` = 1, `currency` = 'EUR', `is_company` = 1.
+        -   Konvertiert `CodeLang` in Sprachcodes ('de', 'en').
+        -   Benennt Spalten um (z.B. `Name2` -> `company_name1`, `KNummer` -> `customer_id`).
+        -   Erstellt `tax_def` Spalte basierend auf dem Ländercode (DE -> Inland, EU-Liste -> EU, Sonst -> Drittland).
+        -   Formatiert `customer_id` auf 5 Stellen (mit führenden Nullen).
+    5.  Split-Logik:
+        -   Trennt Datensätze in zwei Gruppen basierend auf Spalte `KGruppe`:
+            a) Gruppe 'MA' (Mitarbeiter):
+                -   Setzt `is_company` auf 0.
+                -   Benennt `company_name1` in `last_Name` und `company_name2` in `first_Name` um.
+                -   Führt Splitting von `last_Name` durch, falls Leerzeichen enthalten sind.
+                -   Exportiert nach: `data/output/BUSINESS_PARTNER_MA.csv`.
+            b) Andere (Others):
+                -   Exportiert nach: `data/output/BUSINESS_PARTNER.csv`.
+
+2. Funktion: import_business_supplier(diff_partner_ids=None)
+------------------------------------------------------------
+Zweck:
+    Importiert Lieferantendaten.
+
+Ablauf:
+    1.  Lädt SQL-Abfrage aus `sql/get_business_supplier.sql`.
+    2.  Führt Abfrage aus und filtert optional nach IDs.
+    3.  Datenverarbeitung:
+        -   Setzt Standardwerte und konvertiert Sprachen wie oben.
+        -   Erstellt `tax_def` Logik (Inland/EU/Drittland).
+        -   Benennt Lieferanten-spezifische Spalten um (z.B. `AdrNr` -> `supplier_id`).
+    4.  Export:
+        -   Speichert Daten in: `data/output/BUSINESS_SUPPLIER.csv`.
+
+3. Funktion: import_BP_Communication(diff_partner_ids=None)
+-----------------------------------------------------------
+Zweck:
+    Extrahiert Kommunikationsdaten (Email, Telefon, Fax, etc.) und speichert diese in separaten Dateien.
+
+Ablauf:
+    1.  Lädt SQL-Abfrage aus `sql/get_bp_communication.sql`.
+    2.  Erstellt 5 Kopien des Dataframes für verschiedene Kommunikationstypen.
+    3.  Verarbeitung pro Typ:
+        -   Typ 1 (Email):   Liest aus Spalte `EMail`.
+        -   Typ 2 (Fax):     Liest aus Spalte `Fax`.
+        -   Typ 3 (Telefon): Liest aus Spalte `Tel`.
+        -   Typ 4 (Mobil):   Liest aus Spalte `Funk`.
+        -   Typ 5 (URL):     Liest aus Spalte `Homepage`.
+    4.  Standardisierung:
+        -   Der jeweilige Wert wird in die Spalte `communication_string` geschrieben.
+        -   Spalte `communication_type` wird entsprechend gesetzt (1-5).
+        -   `customer_id` wird auf 5 Stellen formatiert.
+    5.  Export:
+        -   Erzeugt 5 separate CSV-Dateien in `data/output/`:
+            -   BUSINESS_PARTNER_EMAIL.csv
+            -   BUSINESS_PARTNER_FAX.csv
+            -   BUSINESS_PARTNER_TELEFON.csv
+            -   BUSINESS_PARTNER_MOBIL.csv
+            -   BUSINESS_PARTNER_URL.csv
+
+4. Funktion: import_BP_Adress(diff_partner_ids=None)
+----------------------------------------------------
+Zweck:
+    Importiert Adressdaten der Geschäftspartner.
+
+Ablauf:
+    1.  Lädt SQL-Abfrage aus `sql/get_bp_address.sql`.
+    2.  Datenverarbeitung:
+        -   Konvertiert Sprachen.
+        -   Benennt Adress-Spalten spezifisch um:
+            -   `Name2` -> `name1`
+            -   `Straße` -> `street`
+            -   `PLZ` -> `post_code`
+            -   `Ort` -> `city`
+            -   `LandKfz` -> `country`
+            -   `EMail` -> `email`, `Fax` -> `fax`, `Tel` -> `telephone`
+        -   Formatiert `customer_id` auf 5 Stellen.
+    3.  Export:
+        -   Selektiert relevante Spalten (`customer_id`, `name1`, `street`, `post_code`, `city`, `country`, `email`, `fax`, `telephone`).
+        -   Entfernt Duplikate.
+        -   Speichert alle Daten in einer einzigen Datei: `data/output/BUSINESS_PARTNER_ADDRESS.csv`.
