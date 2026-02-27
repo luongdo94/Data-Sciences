@@ -29,12 +29,46 @@ def execute_query(query, params=None):
             print(f"Parameters: {params[:5]}... (total: {len(params)} parameters)")
         raise Exception(f"Error executing query: {e}")
 
-def read_csv_file(file_path, encoding='utf-8-sig', delimiter=';', required_columns=None, dtype=None):
-    """Read CSV file with error handling."""
+def save_fetcsv(df, out_path, data_type="ARTICLE"):
+    """Save a DataFrame to CSV with FETCSV header"""
+    header = (
+        "FETCSV VERSION 1\n"
+        "HEADER VERSION 1\n"
+        "SEPARATOR ;\n"
+        "DECIMAL_SEPARATOR ,\n"
+        "LOCALE de\n"
+        f"DATA TYPE {data_type} VERSION 1\n"
+        "ACTION IMPORT\n"
+    )
+    with open(out_path, 'w', encoding='utf-8-sig', newline='') as f:
+        f.write(header)
+        df.to_csv(f, index=False, sep=';', decimal=',', lineterminator='\n')
+
+def read_fetcsv(file_path, **kwargs):
+    """Read a FETCSV file, skipping the header if present"""
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"File not found: {file_path}")
     
-    df = pd.read_csv(file_path, encoding=encoding, delimiter=delimiter, dtype=dtype, on_bad_lines='warn')
+    # Standardize on 'sep' to avoid pandas "Specified a sep and a delimiter" error
+    if 'delimiter' in kwargs:
+        kwargs['sep'] = kwargs.pop('delimiter')
+        
+    with open(file_path, 'r', encoding='utf-8-sig') as f:
+        first_line = f.readline()
+    
+    if "FETCSV" in first_line:
+        # If it's a FETCSV, it uses ; and , as decimal
+        params = {'skiprows': 7, 'sep': ';', 'decimal': ',', 'encoding': 'utf-8-sig'}
+        params.update(kwargs)
+        return pd.read_csv(file_path, **params)
+    else:
+        params = {'sep': ';', 'encoding': 'utf-8-sig'}
+        params.update(kwargs)
+        return pd.read_csv(file_path, **params)
+
+def read_csv_file(file_path, required_columns=None, **kwargs):
+    """Read CSV file with error handling, supporting FETCSV header."""
+    df = read_fetcsv(file_path, **kwargs)
     
     if required_columns:
         missing = [col for col in required_columns if col not in df.columns]

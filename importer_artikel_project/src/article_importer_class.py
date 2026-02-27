@@ -3,7 +3,7 @@ import pandas as pd
 import re
 from datetime import datetime, timedelta
 from pathlib import Path
-from src.database import execute_query, read_sql_query
+from src.database import execute_query, read_sql_query, save_fetcsv, read_csv_file
 from src.config import OUTPUT_DIR, SQL_DIR
 
 class ArticleImporter:
@@ -41,11 +41,11 @@ class ArticleImporter:
             return None
         return sql_path.read_text(encoding='utf-8')
 
-    def _save_csv(self, df, filename):
-        """Standardized CSV export"""
+    def _save_csv(self, df, filename, data_type="ARTICLE"):
+        """Standardized CSV export with FETCSV header"""
         if df is not None and not df.empty:
             out_path = self.output_dir / filename
-            df.to_csv(out_path, index=False, encoding='utf-8-sig', sep=';')
+            save_fetcsv(df, out_path, data_type)
             print(f"Exported {len(df)} records to: {out_path}")
             return out_path
         return None
@@ -110,7 +110,12 @@ class ArticleImporter:
         """Adds keywords to care instruction CSVs"""
         if not file_path.exists(): return
         
-        df = pd.read_csv(file_path, sep=';', encoding='utf-8-sig')
+        try:
+            df = read_csv_file(file_path, sep=';', encoding='utf-8-sig')
+        except Exception:
+            # Fallback or try reading with default settings if parameters mismatch
+            df = read_csv_file(file_path)
+            
         if 'text' not in df.columns: return
 
         df['text'] = df['text'].astype(str)
@@ -138,7 +143,7 @@ class ArticleImporter:
         df['text'] = df['text'].str.replace('\|\|', ' || ').str.replace('\s+', ' ').str.strip()
         df['text'] = df['text'].str.replace(' : ', ': ')
         
-        df.to_csv(file_path, index=False, encoding='utf-8-sig', sep=';')
+        save_fetcsv(df, file_path, "ARTICLE")
 
     def _generate_validity_csv(self, type_filter, output_filename, is_staffel=False):
         """Helper to generate validity CSV from Price_ERP.csv"""

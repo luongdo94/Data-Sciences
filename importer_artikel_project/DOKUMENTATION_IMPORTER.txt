@@ -89,3 +89,30 @@ Ablauf:
         -   Selektiert relevante Spalten (`customer_id`, `name1`, `street`, `post_code`, `city`, `country`, `email`, `fax`, `telephone`).
         -   Entfernt Duplikate.
         -   Speichert alle Daten in einer einzigen Datei: `data/output/BUSINESS_PARTNER_ADDRESS.csv`.
+
+5. Funktion: import_business_customer_accounting()
+--------------------------------------------------
+Zweck:
+    Importiert und validiert Buchhaltungs- und Bankdaten (IBAN, BIC, Bankname) der Geschäftspartner.
+
+Ablauf:
+    1.  Lädt SQL-Abfrage aus `sql/get_business_partner_accounting.sql`.
+    2.  Datenverarbeitung und Umbenennung:
+        -   Benennt Spalten um (z.B. `LandKfz` -> `country`, `KNummer` -> `customer_id`, `Bank` -> `bankname`, `BLZ` -> `bankcode`, `Konto` -> `accountno`).
+    3.  IBAN-Ermittlung (`resolve_iban`):
+        -   Bereinigt Sonderzeichen und Leerzeichen in `accountno`.
+        -   Erkennt automatisch alle gültigen internationalen IBANs.
+        -   Berechnet die IBAN (Prüfziffer), falls nur numerische BLZ und Kontonummer vorliegen.
+    4.  Bundesbank BLZ-Register Integration:
+        -   Lädt automatisch die offizielle Datei der Bundesbank herunter (falls lokal nicht vorhanden als `data/bundesbank_blz_lookup.csv`).
+        -   Ordnet `bankplace` (Ort) basierend auf der BLZ (`bankcode`) zu.
+    5.  BIC-Ermittlung (`resolve_bic`) mit Prioritäts-Kette:
+        -   Prio 1: `bankcode` ist bereits ein valider BIC.
+        -   Prio 2: BIC aus dem lokalen Bundesbank-Register (offline & zuverlässig).
+        -   Prio 3: Dynamische Ermittlung aus der IBAN mittels `schwifty` (inklusive In-Memory Caching für hohe Performance).
+    6.  Bankname-Korrektur (`resolve_bankname`):
+        -   Füllt fehlende Banknamen nach Priorität: 1. Quelldaten, 2. Bundesbank-Register, 3. `schwifty` BIC-Lookup.
+    7.  Land der Bank:
+        -   Spalte `bankcountry` wird aus den ersten zwei Buchstaben der IBAN (bzw. BIC) abgeleitet.
+    8.  Export:
+        -   Speichert die bereinigten und angereicherten Bankdaten in `data/output/BUSINESS_PARTNER_ACCOUNTING.csv`.

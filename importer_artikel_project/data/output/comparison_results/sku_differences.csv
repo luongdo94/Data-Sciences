@@ -1,11 +1,11 @@
+ï»¿FETCSV VERSION 1
+HEADER VERSION 1
+SEPARATOR ;
+DECIMAL_SEPARATOR ,
+LOCALE de
+DATA TYPE DIFFERENCE_REPORT VERSION 1
+ACTION IMPORT
 aid_ew_not_in_aid_erp
-1046-black-L
-1046-black-M
-1046-black-XL
-1046-fire red-L
-1046-fire red-M
-1046-fire red-S
-1046-fire red-XL
 1046-light brown-L
 1046-light brown-M
 1046-light brown-S
@@ -1265,6 +1265,7 @@ aid_ew_not_in_aid_erp
 1565-white-XXXL
 160-black-red-104
 160-black-red-116
+160-black-red-128
 160-black-red-140
 160-black-red-152
 160-black-red-164
@@ -1311,12 +1312,30 @@ aid_ew_not_in_aid_erp
 1600-olive-XS
 1600-olive-XXL
 1600-olive-XXXL
+165-black-104
+165-black-116
+165-black-128
+165-black-140
+165-black-152
+165-black-164
+165-light blue-104
+165-light blue-116
+165-light blue-128
+165-light blue-140
+165-light blue-152
+165-light blue-164
 165-navy-104
 165-navy-116
 165-navy-128
 165-navy-140
 165-navy-152
 165-navy-164
+165-new light grey-104
+165-new light grey-116
+165-new light grey-128
+165-new light grey-140
+165-new light grey-152
+165-new light grey-164
 1650-azure blue-4XL
 1650-azure blue-5XL
 1650-azure blue-L
@@ -1977,6 +1996,14 @@ aid_ew_not_in_aid_erp
 2199-burgundy-XL
 2199-burgundy-XXL
 2199-burgundy-XXXL
+2199-charcoal-4XL
+2199-charcoal-5XL
+2199-charcoal-L
+2199-charcoal-M
+2199-charcoal-S
+2199-charcoal-XL
+2199-charcoal-XXL
+2199-charcoal-XXXL
 2199-fire red-4XL
 2199-fire red-5XL
 2199-fire red-L
@@ -2085,6 +2112,12 @@ aid_ew_not_in_aid_erp
 220030-wild lime-One Size
 220030Kordel-black-One Size
 220030Kordel-white-One Size
+221060DTH-white-black-L
+221060DTH-white-black-M
+221060DTH-white-black-S
+221060DTH-white-black-XL
+221060DTH-white-black-XS
+221060DTH-white-black-XXL
 22150-atoll-1-2
 22150-atoll-12-14
 22150-atoll-3-4
@@ -2136,10 +2169,13 @@ aid_ew_not_in_aid_erp
 223005DTH-black-S
 223005DTH-black-XL
 223005DTH-black-XXL
+223050DTH-black-4XL
+223050DTH-black-5XL
 223050DTH-black-L
 223050DTH-black-M
 223050DTH-black-S
 223050DTH-black-XL
+223050DTH-black-XS
 223050DTH-black-XXL
 223050DTH-black-XXXL
 223090-white-L
@@ -2259,11 +2295,19 @@ aid_ew_not_in_aid_erp
 225182-black-6XL
 225182-black-7XL
 225182-black-8XL
+225183DTH-black-4XL
+225183DTH-black-5XL
+225183DTH-black-L
+225183DTH-black-M
+225183DTH-black-S
+225183DTH-black-XL
+225183DTH-black-XS
+225183DTH-black-XXL
+225183DTH-black-XXXL
 225390-off white-L
 225390-off white-M
 225390-off white-S
 225390-off white-XL
-22780-saffron-One Size
 227971-Lime green client-4XL
 227971-Lime green client-5XL
 227971-Lime green client-L
@@ -2382,10 +2426,6 @@ aid_ew_not_in_aid_erp
 3005-burgundy-XS
 3005-burgundy-XXL
 3005-burgundy-XXXL
-3005-chalk pink-L
-3005-chalk pink-XL
-3005-chalk pink-XS
-3005-chalk pink-XXL
 3005-charcoal-L
 3005-charcoal-M
 3005-charcoal-S
@@ -2529,6 +2569,7 @@ aid_ew_not_in_aid_erp
 3011-black-4XL
 3011-black-5XL
 3011-black-L
+3011-black-M
 3011-black-S
 3011-black-XL
 3011-black-XS
@@ -3154,14 +3195,12 @@ aid_ew_not_in_aid_erp
 3088-burgundy-One Size
 3088-navy-One Size
 3088-sports grey-One Size
-3088-steel grey-One Size
 3088-white-One Size
 3089-black-One Size
 3089-burgundy-One Size
 3089-navy-One Size
 3089-sports grey-One Size
 3089-steel grey-One Size
-3089-white-One Size
 309-azure blue-140
 309-azure blue-152
 309-azure blue-164
@@ -6115,6 +6154,22 @@ aid_ew_not_in_aid_erp
 4250-wild lime-XL
 4250-wild lime-XXL
 4250-wild lime-XXXL
+4400-500K-apple green-4XL
+4400-500K-apple green-5XL
+4400-500K-apple green-L
+4400-500K-apple green-M
+4400-500K-apple green-S
+4400-500K-apple green-XL
+4400-500K-apple green-XXL
+4400-500K-apple green-XXXL
+4400-500K-navy-4XL
+4400-500K-navy-5XL
+4400-500K-navy-L
+4400-500K-navy-M
+4400-500K-navy-S
+4400-500K-navy-XL
+4400-500K-navy-XXL
+4400-500K-navy-XXXL
 4400-apple green-4XL
 4400-apple green-5XL
 4400-apple green-L
@@ -6646,60 +6701,6 @@ aid_ew_not_in_aid_erp
 4910-white-S
 4910-white-XL
 4910-white-XXL
-4920-black-steel grey-4XL
-4920-black-steel grey-5XL
-4920-black-steel grey-L
-4920-black-steel grey-M
-4920-black-steel grey-S
-4920-black-steel grey-XL
-4920-black-steel grey-XS
-4920-black-steel grey-XXL
-4920-black-steel grey-XXXL
-4920-burgundy-st.gray-4XL
-4920-burgundy-st.gray-5XL
-4920-burgundy-st.gray-L
-4920-burgundy-st.gray-M
-4920-burgundy-st.gray-S
-4920-burgundy-st.gray-XL
-4920-burgundy-st.gray-XS
-4920-burgundy-st.gray-XXL
-4920-burgundy-st.gray-XXXL
-4920-li.blue-st.gray-4XL
-4920-li.blue-st.gray-5XL
-4920-li.blue-st.gray-L
-4920-li.blue-st.gray-M
-4920-li.blue-st.gray-S
-4920-li.blue-st.gray-XL
-4920-li.blue-st.gray-XS
-4920-li.blue-st.gray-XXL
-4920-li.blue-st.gray-XXXL
-4920-navy-steel grey-4XL
-4920-navy-steel grey-5XL
-4920-navy-steel grey-L
-4920-navy-steel grey-M
-4920-navy-steel grey-S
-4920-navy-steel grey-XL
-4920-navy-steel grey-XS
-4920-navy-steel grey-XXL
-4920-navy-steel grey-XXXL
-4920-st.gray-n.l.gray-4XL
-4920-st.gray-n.l.gray-5XL
-4920-st.gray-n.l.gray-L
-4920-st.gray-n.l.gray-M
-4920-st.gray-n.l.gray-S
-4920-st.gray-n.l.gray-XL
-4920-st.gray-n.l.gray-XS
-4920-st.gray-n.l.gray-XXL
-4920-st.gray-n.l.gray-XXXL
-4920-white-steel grey-4XL
-4920-white-steel grey-5XL
-4920-white-steel grey-L
-4920-white-steel grey-M
-4920-white-steel grey-S
-4920-white-steel grey-XL
-4920-white-steel grey-XS
-4920-white-steel grey-XXL
-4920-white-steel grey-XXXL
 5025-black-L
 5025-black-M
 5025-black-S
@@ -7074,15 +7075,6 @@ aid_ew_not_in_aid_erp
 5099-graphite-XS
 5099-graphite-XXL
 5099-graphite-XXXL
-5099-lime green-4XL
-5099-lime green-5XL
-5099-lime green-L
-5099-lime green-M
-5099-lime green-S
-5099-lime green-XL
-5099-lime green-XS
-5099-lime green-XXL
-5099-lime green-XXXL
 5099-navy-4XL
 5099-navy-5XL
 5099-navy-L
@@ -7161,19 +7153,12 @@ aid_ew_not_in_aid_erp
 518-black-164
 518-navy-104
 518-navy-140
-518-navy-152
 5181-black-L
 5181-black-M
 5181-black-S
 5181-black-XL
 5181-black-XS
 5181-black-XXL
-5181-burgundy-L
-5181-burgundy-M
-5181-burgundy-S
-5181-burgundy-XL
-5181-burgundy-XS
-5181-burgundy-XXL
 5181-navy-L
 5181-navy-M
 5181-navy-S
@@ -7212,6 +7197,14 @@ aid_ew_not_in_aid_erp
 5182-sports grey-XL
 5182-sports grey-XXL
 5182-sports grey-XXXL
+5183-black-4XL
+5183-black-5XL
+5183-black-L
+5183-black-M
+5183-black-S
+5183-black-XL
+5183-black-XXL
+5183-black-XXXL
 5270-apple green-4XL
 5270-apple green-5XL
 5270-apple green-L
@@ -7608,18 +7601,21 @@ aid_ew_not_in_aid_erp
 5505-dusty khaki-M
 5505-dusty khaki-S
 5505-dusty khaki-XL
+5505-dusty khaki-XS
 5505-dusty khaki-XXL
 5505-dusty khaki-XXXL
 5505-heather grey-L
 5505-heather grey-M
 5505-heather grey-S
 5505-heather grey-XL
+5505-heather grey-XS
 5505-heather grey-XXL
 5505-heather grey-XXXL
 5505-navy-L
 5505-navy-M
 5505-navy-S
 5505-navy-XL
+5505-navy-XS
 5505-navy-XXL
 5505-navy-XXXL
 6099-navy-L
@@ -8954,7 +8950,6 @@ aid_ew_not_in_aid_erp
 7940-black-M
 7940-black-S
 7940-black-XL
-7940-black-XS
 7940-black-XXL
 7940-black-XXXL
 7940-navy-4XL
@@ -9673,11 +9668,11 @@ CS-7005-navy-38
 CS-7005-navy-40
 CS-7005-navy-42
 CS-7005-navy-44
-CS-7005-rosé-36
-CS-7005-rosé-38
-CS-7005-rosé-40
-CS-7005-rosé-42
-CS-7005-rosé-44
+CS-7005-rosÃ©-36
+CS-7005-rosÃ©-38
+CS-7005-rosÃ©-40
+CS-7005-rosÃ©-42
+CS-7005-rosÃ©-44
 CS-7010-black denim-30
 CS-7010-black denim-32
 CS-7010-black denim-34
@@ -10251,80 +10246,85 @@ Cs-6510-thistle down-M
 Cs-6510-thistle down-S
 Cs-6510-thistle down-XL
 Cs-6510-thistle down-XS
-D1G-3DREIECKE-Brust groß-One Size
-D1G-3DREIECKE-Rücken groß-One Size
+D1G-3DREIECKE-Brust groÃŸ-One Size
+D1G-3DREIECKE-RÃ¼cken groÃŸ-One Size
 D1K-3Dreiecke-Arm links-One Size
 D1K-3Dreiecke-Arm rechts-One Size
 D1K-3Dreiecke-Brust klein-One Size
-D1K-3Dreiecke-Rücken klein-One Size
-D2G-Punkte-Brust groß-One Size
-D2G-Punkte-Rücken groß-One Size
+D1K-3Dreiecke-RÃ¼cken klein-One Size
+D2G-Punkte-Brust groÃŸ-One Size
+D2G-Punkte-RÃ¼cken groÃŸ-One Size
 D2K-Punkte-Arm links-One Size
 D2K-Punkte-Arm rechts-One Size
 D2K-Punkte-Brust klein-One Size
-D2K-Punkte-Rücken klein-One Size
-D3G-Zahnrad-Brust groß-One Size
-D3G-Zahnrad-Rücken groß-One Size
+D2K-Punkte-RÃ¼cken klein-One Size
+D3G-Zahnrad-Brust groÃŸ-One Size
+D3G-Zahnrad-RÃ¼cken groÃŸ-One Size
 D3K-Zahnrad-Arm links-One Size
 D3K-Zahnrad-Arm rechts-One Size
 D3K-Zahnrad-Brust klein-One Size
-D3K-Zahnrad-Rücken klein-One Size
-D4G-Raute-Brust groß-One Size
-D4G-Raute-Rücken groß-One Size
+D3K-Zahnrad-RÃ¼cken klein-One Size
+D4G-Raute-Brust groÃŸ-One Size
+D4G-Raute-RÃ¼cken groÃŸ-One Size
 D4K-Raute-Arm links-One Size
 D4K-Raute-Arm rechts-One Size
 D4K-Raute-Brust klein-One Size
-D4K-Raute-Rücken klein-One Size
-D5K-Kreis-Rücken klein-One Size
-D6-Kreativ-Drei-Brust groß-One Size
-D6-Kreativ-Drei-Rücken groß-One Size
+D4K-Raute-RÃ¼cken klein-One Size
+D5K-Kreis-RÃ¼cken klein-One Size
+D6-Kreativ-Drei-Brust groÃŸ-One Size
+D6-Kreativ-Drei-RÃ¼cken groÃŸ-One Size
 D6K-Kreativ-Dre-Arm links-One Size
 D6K-Kreativ-Dre-Arm rechts-One Size
 D6K-Kreativ-Dre-Brust klein-One Size
-D6K-Kreativ-Dre-Rücken klein-One Size
+D6K-Kreativ-Dre-RÃ¼cken klein-One Size
 EXCD-Paket-Sortiment-One Size
-F-002-Sef Reflex Cut_HT_-50 cm²
-F-004-Chem_7499C_Beige-50 cm²
-F-004-Chem_UpperFlock_weiß-50 cm²
-F-004-Flexcut_weiß_Nylon-50 cm²
-F-004-Gold_Metalic-50 cm²
-F-004-IVM_royal_FlexiA-50 cm²
-F-004-SEF_Black_FlexCutAdv-50 cm²
-F-004-SEF_CoolGrey14_Flex-50 cm²
-F-004-SEF_Flammrot_FlexCut-50 cm²
-F-004-SEF_Pass.rot_FlexCut-50 cm²
-F-004-SEF_Rosa_FlexAdv-50 cm²
-F-004-SEF_White_FlexCutAdv-50 cm²
-F-004-SEF_Zitronengelb_Fle-50 cm²
-F-004-SEF_apfelgrün-50 cm²
-F-004-Silber_Metallic-50 cm²
-F-004-neon grün-50 cm²
-F-004-neon pink-50 cm²
-F-004-silber Glitzer-50 cm²
-F-005-Black_Reflex Folie-50 cm²
-F-006-fire red-50 cm²
-F-006-white-50 cm²
-F-007-white-50 cm²
-F-008-Osaka Apple Green-50 cm²
-F-008-Windsor Red-50 cm²
-F-009-himmelblau Glitzer-50 cm²
-F-009-purple Glitzer-50 cm²
-F-009-silber Glitzer-50 cm²
+F-002-Sef Reflex Cut_HT_-50 cmÂ²
+F-004-Chem_7499C_Beige-50 cmÂ²
+F-004-Chem_UpperFlock_weiÃŸ-50 cmÂ²
+F-004-Flexcut_weiÃŸ_Nylon-50 cmÂ²
+F-004-Gold_Metalic-50 cmÂ²
+F-004-IVM_royal_FlexiA-50 cmÂ²
+F-004-SEF_Black_FlexCutAdv-50 cmÂ²
+F-004-SEF_CoolGrey14_Flex-50 cmÂ²
+F-004-SEF_Flammrot_FlexCut-50 cmÂ²
+F-004-SEF_Pass.rot_FlexCut-50 cmÂ²
+F-004-SEF_Rosa_FlexAdv-50 cmÂ²
+F-004-SEF_White_FlexCutAdv-50 cmÂ²
+F-004-SEF_Zitronengelb_Fle-50 cmÂ²
+F-004-SEF_apfelgrÃ¼n-50 cmÂ²
+F-004-Silber_Metallic-50 cmÂ²
+F-004-neon grÃ¼n-50 cmÂ²
+F-004-neon pink-50 cmÂ²
+F-004-silber Glitzer-50 cmÂ²
+F-005-Black_Reflex Folie-50 cmÂ²
+F-006-fire red-50 cmÂ²
+F-006-white-50 cmÂ²
+F-007-white-50 cmÂ²
+F-008-Osaka Apple Green-50 cmÂ²
+F-008-Windsor Red-50 cmÂ²
+F-009-himmelblau Glitzer-50 cmÂ²
+F-009-purple Glitzer-50 cmÂ²
+F-009-silber Glitzer-50 cmÂ²
 FL-25%-Englisch-One size
 FL-25%-Sortiment-
 FL-25%-Sortiment-One size
 FL-B2C-Kennenlern Rabatt-
 FL-ECOVADI-Sortiment-
 FL-ECOVADI-Sortiment-One size
+FL-EXCD EN-Sortiment-One size
 FL-EXCD-DE-Sortiment-One size
-FL-FM 3084-DE-Sortiment-One size
+FL-EXCD-FR-Sortiment-One size
+FL-K.STÃ„NDER-Sortiment-
+FL-K.STÃ„NDER-Sortiment-One size
 FL-MIG-Sortiment-One size
-FL-Organic-T-Sortiment-One size
+FL-NEUHEITEN FR-Sortiment-
+FL-Neuheiten EN-Sortiment-
+FL-Neuheiten EN-Sortiment-One size
+FL-Neuheiten-Sortiment-
+FL-Neuheiten-Sortiment-One size
 FL-Premium -Sortiment-One size
-FL-Reflective-D-Sortiment-One size
 FL-T-Shirt-Sortiment-
 FL-T-Shirt-Sortiment-One size
-FL-XO-DE-Sortiment-One size
 FM-D1-white-L
 FM-D1-white-S
 FM-D5-azure blue-L
@@ -10348,117 +10348,7 @@ FM-D5-steel grey-S
 FM-D5-white-L
 FM-D5-white-M
 FM-D5-white-S
-H-3011-black-L
-H-3011-black-M
-H-3011-black-S
-H-3011-black-XL
-H-3011-black-XS
-H-3011-black-XXL
-H-3011-black-XXXL
-H-3011-bright rose-L
-H-3011-bright rose-M
-H-3011-bright rose-S
-H-3011-bright rose-XL
-H-3011-bright rose-XS
-H-3011-bright rose-XXL
-H-3011-bright rose-XXXL
-H-3011-cherry berry-L
-H-3011-cherry berry-M
-H-3011-cherry berry-S
-H-3011-cherry berry-XL
-H-3011-cherry berry-XS
-H-3011-cherry berry-XXL
-H-3011-cherry berry-XXXL
-H-3011-emerald-L
-H-3011-emerald-M
-H-3011-emerald-S
-H-3011-emerald-XL
-H-3011-emerald-XS
-H-3011-emerald-XXL
-H-3011-emerald-XXXL
-H-3011-navy-L
-H-3011-navy-M
-H-3011-navy-S
-H-3011-navy-XL
-H-3011-navy-XS
-H-3011-navy-XXL
-H-3011-navy-XXXL
-H-3011-purple-L
-H-3011-purple-M
-H-3011-purple-S
-H-3011-purple-XL
-H-3011-purple-XS
-H-3011-purple-XXL
-H-3011-purple-XXXL
-H-3011-turquoise-L
-H-3011-turquoise-M
-H-3011-turquoise-S
-H-3011-turquoise-XL
-H-3011-turquoise-XS
-H-3011-turquoise-XXL
-H-3011-turquoise-XXXL
-H-3011-white-L
-H-3011-white-M
-H-3011-white-S
-H-3011-white-XL
-H-3011-white-XS
-H-3011-white-XXL
-H-3011-white-XXXL
-H-3012-black-L
-H-3012-black-M
-H-3012-black-S
-H-3012-black-XL
-H-3012-black-XS
-H-3012-black-XXL
-H-3012-bright rose-L
-H-3012-bright rose-M
-H-3012-bright rose-S
-H-3012-bright rose-XL
-H-3012-bright rose-XS
-H-3012-bright rose-XXL
-H-3012-cherry berry-L
-H-3012-cherry berry-M
-H-3012-cherry berry-S
-H-3012-cherry berry-XL
-H-3012-cherry berry-XS
-H-3012-cherry berry-XXL
-H-3012-emerald-L
-H-3012-emerald-M
-H-3012-emerald-S
-H-3012-emerald-XL
-H-3012-emerald-XS
-H-3012-emerald-XXL
-H-3012-navy-L
-H-3012-navy-M
-H-3012-navy-S
-H-3012-navy-XL
-H-3012-navy-XS
-H-3012-navy-XXL
-H-3012-purple-L
-H-3012-purple-M
-H-3012-purple-S
-H-3012-purple-XL
-H-3012-purple-XS
-H-3012-purple-XXL
-H-3012-turquoise-L
-H-3012-turquoise-M
-H-3012-turquoise-S
-H-3012-turquoise-XL
-H-3012-turquoise-XS
-H-3012-turquoise-XXL
-H-3012-white-L
-H-3012-white-M
-H-3012-white-S
-H-3012-white-XL
-H-3012-white-XS
-H-3012-white-XXL
-H-754-Sortiment-OS
-H-762-Sortiment-OS
-H-782-Sortiment-OS
-H-791-Sortiment-OS
-H-C-Sortiment-OS
 H-O-Neutral-Sortiment-One size
-H-ORGANIC-Sortiment-One Size
 H-TAG PIN-black-OS
 HRC-7850-TR-navy-4XL
 HRC-7850-TR-navy-5XL
@@ -10468,13 +10358,10 @@ HRC-7850-TR-navy-S
 HRC-7850-TR-navy-XL
 HRC-7850-TR-navy-XXL
 HRC-7850-TR-navy-XXXL
-Jacken-Paket 2-Sortiment-One Size
-Jacken-Paket So-Sortiment-One Size
 K-N-DE-P-Sortiment-One Size
 K-N-DE-Sortiment-One Size
 K-N-EN-Sortiment-One Size
 K-N-FR-Sortiment-One Size
-K-Reflective-DE-Sortiment-One Size
 Nackenband-alaskan blue-4XL
 Nackenband-alaskan blue-5XL
 Nackenband-alaskan blue-L
@@ -10674,7 +10561,6 @@ Nackenband-wild lime-XL
 Nackenband-wild lime-XS
 Nackenband-wild lime-XXL
 Nackenband-wild lime-XXXL
-News-Paket-Sortiment-One Size
 P-1000-Sortiment-Small
 P-1001-Sortiment-Medium
 P-1002-Sortiment-Large
@@ -10697,7 +10583,7 @@ P-3002-Sortiment-One Size
 P-4000-Sortiment-Post
 P-4001-Sortiment-klein
 P-4002-Sortiment-mittel
-P-4003-Sortiment-groß
+P-4003-Sortiment-groÃŸ
 P-4006-Sortiment-klein
 P-4009-Sortiment-klein
 P-4020-Sortiment-One Size
@@ -10706,19 +10592,16 @@ P-5001-white-One size
 P-5002-white-One Size
 P-5003-Sortiment-One Size
 Promo-Paket-Sortiment-One Size
-S-1210-Sortiment-One Size
-S-1212-Sortiment-One Size
-S-1220-Sortiment-One Size
 T-102-04972_Kandelium-
 T-102-05070_becker-
 T-102-05238_Benning-
-"T-102-06147DEW10*1,7-"
+T-102-06147DEW10*1,7-
 T-102-06147DEW18*3-
 T-102-06147DON10*3-
-"T-102-06147DON18*5,4-"
+T-102-06147DON18*5,4-
 T-102-06147_HVG-
 T-102-06206_BTL_Brust-
-T-102-06206_BTL_Rücken-
+T-102-06206_BTL_RÃ¼cken-
 T-102-06488_FWKirkel-
 T-102-06488_WK_KFZ-
 T-102-06516_Linamar-
@@ -10771,11 +10654,13 @@ T-102-10646_Alzchem-
 T-102-10655_Wekido_R-
 T-102-10927_Soennecken-
 T-102-11041_Envases-
+T-102-11067_A_BbÃ¤der-
 T-102-11067_DE.R.Evamo-
 T-102-11067_EN.R.Evamo-
 T-102-11067_Evamo-
-"T-102-11120_Ewelix11,3*1,5-"
-"T-102-11120_Ewelix20*4,8-"
+T-102-11067_R_BBÃ¤der-
+T-102-11120_Ewelix11,3*1,5-
+T-102-11120_Ewelix20*4,8-
 T-102-11120_X_10*10 cm-
 T-102-11120_X_5*5 cm-
 T-102-11181_B.Schmidt-
@@ -10784,10 +10669,10 @@ T-102-11185_Soeffing-
 T-102-11276_MT-
 T-102-11276_Uniklinik-
 T-102-11276_Wetzel-
-T-102-11969_B_Möbelw-
-T-102-11969_R_Möbelw-
+T-102-11969_B_MÃ¶belw-
+T-102-11969_R_MÃ¶belw-
 T-102-12059_Allianz-
-T-102-12059_Köln-
+T-102-12059_KÃ¶ln-
 T-102-12059_VCB-
 T-102-12112_FAR-
 T-102-12251_B_VAO-
@@ -10813,6 +10698,7 @@ T-102-13692_WKW Autom-
 T-102-13692_WKW_Extrusion-
 T-102-13800_Speira-
 T-102-13803_BVV-
+T-102-13803_B_Avitea-
 T-102-13803_B_B_GEA_1-
 T-102-13803_B_R_GEA_1-
 T-102-13803_B_Wald-
@@ -10825,7 +10711,8 @@ T-102-13803_I_R_GEA-
 T-102-13803_Mondi_2farbig-
 T-102-13803_Mondi_black-
 T-102-13803_PielEigenbedar-
-T-102-13803_PielWürfel-
+T-102-13803_PielWÃ¼rfel-
+T-102-13803_R_Avitea-
 T-102-13803_R_Wald-
 T-102-13803_WEPA_B-
 T-102-13803_WEPA_R-
@@ -10842,7 +10729,7 @@ T-102-13836_Verdi_R_3-
 T-102-14172_SP_Brust-
 T-102-14172_SP_Name-
 T-102-14172_SP_Pfeil-
-T-102-14172_SP_Rücken-
+T-102-14172_SP_RÃ¼cken-
 T-102-14238_Cheps-
 T-102-14404_Communications-
 T-102-14404_Pelikan-
@@ -10866,14 +10753,17 @@ T-102-16633_B_Budde-
 T-102-16633_R_Budde-
 T-102-16661_ElomaKan23x23-
 T-102-16661_ElomaKant. 9x6-
-"T-102-16661_GvE 4x4,5-"
-"T-102-16661_GvE 7x7,8-"
+T-102-16661_GvE 4x4,5-
+T-102-16661_GvE 7x7,8-
+T-102-16797_A_Novum-
+T-102-16797_B_Novum-
+T-102-16999_Flint-
 T-102-17027_B.Edeka-
 T-102-17027_Leichtmetall R-
 T-102-17027_Leichtmetall-
 T-102-17027_R.Edeka-
-T-102-17121_B.Lürssen-
-T-102-17121_R.Lürssen-
+T-102-17121_B.LÃ¼rssen-
+T-102-17121_R.LÃ¼rssen-
 T-102-17270_Elrond-
 T-102-17270_Kaiser_Nachfol-
 T-102-17270_hd-timber_B-
@@ -10881,15 +10771,15 @@ T-102-17367_Atempo_B-
 T-102-17367_Atempo_R-
 T-102-17367_S.Bub-
 T-102-17367_S.BubK-
-T-102-17367_S.Mäd-
-T-102-17367_S.MädK-
+T-102-17367_S.MÃ¤d-
+T-102-17367_S.MÃ¤dK-
 T-102-17367_S_Atempo_B-
 T-102-17367_S_Atempo_R-
-T-102-17437_B_Köster_1-
-T-102-17437_B_Köster_2-
+T-102-17437_B_KÃ¶ster_1-
+T-102-17437_B_KÃ¶ster_2-
 T-102-17437_OBO-
-T-102-17437_R_Köster_1-
-T-102-17437_R_Köster_2-
+T-102-17437_R_KÃ¶ster_1-
+T-102-17437_R_KÃ¶ster_2-
 T-102-17440_BeKaMed-
 T-102-17440_Dlier-
 T-102-17440_GFO-
@@ -10918,7 +10808,7 @@ T-102-18618_WB_Uni-
 T-102-18618_WR_Uni-
 T-102-18618_ahg-
 T-102-18625_HC_Herz-
-T-102-18625_HC_Rücken-
+T-102-18625_HC_RÃ¼cken-
 T-102-18625_HC_Senkrecht-
 T-102-18627_B_KHB-
 T-102-18627_R_KHB-
@@ -10944,24 +10834,24 @@ T-102-19290_velux-
 T-102-19298_Victor-
 T-102-19298_Victor_Black-
 T-102-19298_Victor_White-
-T-102-19418_Vongroß-
+T-102-19418_VongroÃŸ-
 T-102-19418_Wurm-
 T-102-19448_B_Fischer-
 T-102-19448_OptimumGroup-
 T-102-19448_Plastforma-
 T-102-19448_TC_R-
 T-102-19612_AMAG-
-T-102-19612_weißes_Rössl_B-
-T-102-19612_weißes_Rössl_R-
+T-102-19612_weiÃŸes_RÃ¶ssl_B-
+T-102-19612_weiÃŸes_RÃ¶ssl_R-
 T-102-19706_Or_Sixt-
 T-102-19706_RB_Sixt-
 T-102-19761_LH_Brust-
-T-102-19761_LH_Rücken-
+T-102-19761_LH_RÃ¼cken-
 T-102-19810_AF_Arm L-
 T-102-19810_AF_Brust-
 T-102-19810_PR_Arm R-
-T-102-19810_Rücken-Rand-
-T-102-19810_Rücken_Voll-
+T-102-19810_RÃ¼cken-Rand-
+T-102-19810_RÃ¼cken_Voll-
 T-102-19914_Quirion_Brust-
 T-102-19936_B_BMS-
 T-102-19936_R_BMS-
@@ -10985,9 +10875,9 @@ T-102-20544_R_Wing-
 T-102-20788_TLS-
 T-102-20788_Wohnmobilverei-
 T-102-20808_Borrmann_Brust-
-T-102-20808_Borrmann_Rücke-
+T-102-20808_Borrmann_RÃ¼cke-
 T-102-20825_Xella_blau-
-T-102-20825_Xella_weiß-
+T-102-20825_Xella_weiÃŸ-
 T-102-21075_MDS_B-
 T-102-21075_MDS_R-
 T-102-21115_ON-
@@ -10996,16 +10886,18 @@ T-102-21142_Dressel_B-
 T-102-21142_Dressel_B_B-
 T-102-21142_Dressel_R-
 T-102-21142_Dressel_R_B-
+T-102-21235_Amprojektraum-
+T-102-21235_B_Raumprojekt-
 T-102-21235_Raumprojekt-
 T-102-21328_BMW_B-
 T-102-21328_BMW_grau-
 T-102-21328_M_BMW-
 T-102-21328_Plus_BMW-
-T-102-21403_B_Blütenmeer-
-T-102-21403_R_Blütenmeer-
+T-102-21403_B_BlÃ¼tenmeer-
+T-102-21403_R_BlÃ¼tenmeer-
 T-102-21556_Horny_R-
 T-102-21556_Horny_schwarz-
-T-102-21556_Horny_weiß-
+T-102-21556_Horny_weiÃŸ-
 T-102-21627_B_wellfair-
 T-102-21627_R_wellfair-
 T-102-21629_B_Buzz-
@@ -11024,7 +10916,7 @@ T-104-06206_B-Lurch-
 T-104-06206_R_Lurch-
 T-104-08543_MMM-
 T-104-10524_B&O_Brust-
-T-104-10524_B&O_Rücken-
+T-104-10524_B&O_RÃ¼cken-
 T-104-11047_B_dell-tec-
 T-104-11047_R_dell-tec-
 T-104-11120_DornBau-
@@ -11043,7 +10935,7 @@ T-104-18618_BMW-
 T-104-18618_SF3-
 T-104-18627_KBH-
 T-104-18925_Karn.Brust-
-T-104-18925_Karn.Rück-
+T-104-18925_Karn.RÃ¼ck-
 T-104-18925_Name-
 T-104-18925_Spark.Arm-
 T-104-19147_Traktor-
@@ -11057,6 +10949,8 @@ T-104-19936_B_BMS-
 T-104-19936_Lagerist-
 T-104-19936_R_BMS-
 T-104-20055_MTV-
+T-104-20335_A_reflective-
+T-104-20335_R_reflective-
 T-104-20367_Rhein_Sieg-
 T-104-20367_Rhenag-
 T-104-20367_Westerwald-
@@ -11065,7 +10959,7 @@ T-104-Einrichtungskosten-
 T-104-Veredelung-
 T-105-04820_PT012C-
 T-105-05738_Bosch-
-T-105-05738_Türkis-
+T-105-05738_TÃ¼rkis-
 T-105-10833_Mercedes-
 T-105-11400_JB-
 T-105-12461_Schatz-
@@ -11119,15 +11013,15 @@ T-106-12220_Hager-XL
 T-106-12220_Hager-XXL
 T-106-12220_Hager-XXXL
 T-106-12220_Hager_Neutr-Neutr
-T-106-12461_ÖkoFen-4XL
-T-106-12461_ÖkoFen-5XL
-T-106-12461_ÖkoFen-L
-T-106-12461_ÖkoFen-M
-T-106-12461_ÖkoFen-Neutr
-T-106-12461_ÖkoFen-S
-T-106-12461_ÖkoFen-XL
-T-106-12461_ÖkoFen-XXL
-T-106-12461_ÖkoFen-XXXL
+T-106-12461_Ã–koFen-4XL
+T-106-12461_Ã–koFen-5XL
+T-106-12461_Ã–koFen-L
+T-106-12461_Ã–koFen-M
+T-106-12461_Ã–koFen-Neutr
+T-106-12461_Ã–koFen-S
+T-106-12461_Ã–koFen-XL
+T-106-12461_Ã–koFen-XXL
+T-106-12461_Ã–koFen-XXXL
 T-106-14404_Pelikan-Neutr
 T-106-14721_Dachser-Neutr
 T-106-14721_Gr.Pleier-4XL
@@ -11141,25 +11035,25 @@ T-106-14721_Gr.Pleier-XXXL
 T-106-14721_Neut.Pleier-Neutr
 T-106-14835_DieBedrucker-Neutr
 T-106-15447_Jaschko-Neutr
-T-106-15852_D_Bläser_grau-4XL
-T-106-15852_D_Bläser_grau-5XL
-T-106-15852_D_Bläser_grau-L
-T-106-15852_D_Bläser_grau-M
-T-106-15852_D_Bläser_grau-Neutr
-T-106-15852_D_Bläser_grau-S
-T-106-15852_D_Bläser_grau-XL
-T-106-15852_D_Bläser_grau-XXL
-T-106-15852_D_Bläser_grau-XXXL
-T-106-15852_H_Bläser_grau-4XL
-T-106-15852_H_Bläser_grau-5XL
-T-106-15852_H_Bläser_grau-L
-T-106-15852_H_Bläser_grau-M
-T-106-15852_H_Bläser_grau-Neutr
-T-106-15852_H_Bläser_grau-S
-T-106-15852_H_Bläser_grau-XL
-T-106-15852_H_Bläser_grau-XXL
-T-106-15852_H_Bläser_grau-XXXL
-T-106-15852_Neutr_Bläser-Neutr
+T-106-15852_D_BlÃ¤ser_grau-4XL
+T-106-15852_D_BlÃ¤ser_grau-5XL
+T-106-15852_D_BlÃ¤ser_grau-L
+T-106-15852_D_BlÃ¤ser_grau-M
+T-106-15852_D_BlÃ¤ser_grau-Neutr
+T-106-15852_D_BlÃ¤ser_grau-S
+T-106-15852_D_BlÃ¤ser_grau-XL
+T-106-15852_D_BlÃ¤ser_grau-XXL
+T-106-15852_D_BlÃ¤ser_grau-XXXL
+T-106-15852_H_BlÃ¤ser_grau-4XL
+T-106-15852_H_BlÃ¤ser_grau-5XL
+T-106-15852_H_BlÃ¤ser_grau-L
+T-106-15852_H_BlÃ¤ser_grau-M
+T-106-15852_H_BlÃ¤ser_grau-Neutr
+T-106-15852_H_BlÃ¤ser_grau-S
+T-106-15852_H_BlÃ¤ser_grau-XL
+T-106-15852_H_BlÃ¤ser_grau-XXL
+T-106-15852_H_BlÃ¤ser_grau-XXXL
+T-106-15852_Neutr_BlÃ¤ser-Neutr
 T-106-16628_B&W-Neutr
 T-106-16628_B&W_Hoody-Neutr
 T-106-16896_Wibeco_H-Neutr
@@ -11171,7 +11065,7 @@ T-106-16896_Wibeco_H_G-S
 T-106-16896_Wibeco_H_G-XL
 T-106-16896_Wibeco_H_G-XXL
 T-106-16896_Wibeco_H_G-XXXL
-T-106-16917_Bänfer-Neutr
+T-106-16917_BÃ¤nfer-Neutr
 T-106-18157_Ostendorf-Neutr
 T-106-18192_Br.Ladies-L
 T-106-18192_Br.Ladies-M
@@ -11235,6 +11129,7 @@ T-106-20550_M_RheinFire-S
 T-106-20550_M_RheinFire-XL
 T-106-20550_M_RheinFire-XXL
 T-106-20550_M_RheinFire-XXXL
+T-106-20550_M_RheinNEUTRAL-Neutr
 T-106-20550_W_RheinFire-
 T-106-20550_W_RheinFire-4XL
 T-106-20550_W_RheinFire-5XL
@@ -11245,10 +11140,19 @@ T-106-20550_W_RheinFire-S
 T-106-20550_W_RheinFire-XL
 T-106-20550_W_RheinFire-XXL
 T-106-20550_W_RheinFire-XXXL
+T-106-20550_W_RheinNEUTRAL-Neutr
 T-106-20669_Pfalz_Kult-Neutr
-T-106-20669_Pfalz_Weiß-Neutr
+T-106-20669_Pfalz_WeiÃŸ-Neutr
+T-106-20949_CL-L
+T-106-20949_CL-M
+T-106-20949_CL-Neutr
+T-106-20949_CL-S
+T-106-20949_CL-XL
+T-106-20949_CL-XXL
+T-106-20949_CL-XXXL
 T-106-21556_Horny-Neutr
 T-106-21698_Hockey-Neutr
+T-106-21927_Brinkmann-Neutr
 T-106-FCH-Neutr
 T-106-Wacker Neuson-4XL
 T-106-Wacker Neuson-5XL
@@ -11283,7 +11187,7 @@ T-107-13803_WEPA_R-
 T-107-13803_Wepa Team-
 T-107-14929_JBO-
 T-107-14929_MPG-
-T-107-14990_RöHrs-
+T-107-14990_RÃ¶Hrs-
 T-107-15459_Rosen-
 T-107-15953_H&D_B-
 T-107-15953_H&D_R-
@@ -11301,7 +11205,7 @@ T-107-19936_Lagerist-
 T-107-19936_R_BMS-
 T-107-20034_PaulDruck-
 T-107-20376_Promw_Brust-
-T-107-20376_Promw_Rücken-
+T-107-20376_Promw_RÃ¼cken-
 T-107-20684_Lhoist-
 T-107-20684_Lhoist_Ausbild-
 T-107-20684_Lhoist_Brust-
@@ -11388,7 +11292,7 @@ T-132-turquoise-One Size
 T-132-white-One Size
 T-132-wild lime-One Size
 T-152-19290_W4Pros-One Size
-T-152-Bläser-One Size
+T-152-BlÃ¤ser-One Size
 T-152-DB Logo Rubber-One Size
 T-152-Special position-One Size
 T-154-08518_Reusch_Muetze-One Size
@@ -11397,10 +11301,10 @@ T-154-14721_Dachser-One Size
 T-154-16144_mbg-One Size
 T-154-16628_B&W-One Size
 T-154-16628_B&W_Hoody-One Size
-T-154-16628_SchwarzerBär-One Size
+T-154-16628_SchwarzerBÃ¤r-One Size
 T-154-16628_SpeedMe-One Size
-T-154-16970 Grätige Bolle-One Size
-T-154-18481_Sauerlända-One Size
+T-154-16970 GrÃ¤tige Bolle-One Size
+T-154-18481_SauerlÃ¤nda-One Size
 T-154-18494_Manyax-One Size
 T-154-19056_alpvibes-One Size
 T-154-19078_Plugnpull-One Size
@@ -11408,12 +11312,13 @@ T-154-19259_Corona-One Size
 T-154-19290_W4Pros-One Size
 T-154-19790_ICHBIN-One Size
 T-154-20337_Rekyl-One Size
+T-154-20949_CL-One Size
 T-154-21556_Horny-One Size
 T-154-21698_Hockey-One Size
 T-154-FCH Blau-One Size
 T-154-FCH Grau-One Size
 T-154-Gorilla Power-One Size
-T-154-Silberrücken-One Size
+T-154-SilberrÃ¼cken-One Size
 T-156-18517_Fendt-One Size
 T-156-19738_OC_Hangtag-One Size
 T-156-Hangt Fleece Hamburg-L
@@ -11493,8 +11398,8 @@ T-409-Sortiment-
 T-410-Sortiment-
 T-411-Sortiment-
 T-412-Sortiment-
-T-500-Edelweiß/Frau-One Size
-T-500-Edelweiß/Mann-One Size
+T-500-EdelweiÃŸ/Frau-One Size
+T-500-EdelweiÃŸ/Mann-One Size
 T-500-Haptica Muster-One Size
 T-500-Promodoro-One Size
 T-500-Sortiment-One Size
@@ -11522,34 +11427,34 @@ T-524-Sortiment-One Size
 T-525-Sortiment-One Size
 T-550-Sortiment-One Size
 T-700-Lager.Brust.Reflex-One Size
-T-700-Lager.Rücken.Reflex-One Size
+T-700-Lager.RÃ¼cken.Reflex-One Size
 T-700-PromoMaske-One Size
 T-700-PromoMaske_farbig6*1-One Size
-T-700-Promo_Grün_6*1 cm-One Size
+T-700-Promo_GrÃ¼n_6*1 cm-One Size
 T-700-Refl. Promo. Brustlo-One Size
-T-700-Refl.We belie.Rücken-One Size
-"T-700-ReflPrombig 25*8,5cm-One Size"
+T-700-Refl.We belie.RÃ¼cken-One Size
+T-700-ReflPrombig 25*8,5cm-One Size
 T-700-Tomate_Mitarbeiter-One Size
 T-700B2C-#welovepromodoro-One Size
-T-700B2C-D1-0322 groß-One Size
+T-700B2C-D1-0322 groÃŸ-One Size
 T-700B2C-D1-0322 klein-One Size
-T-700B2C-D2-0122 groß-One Size
+T-700B2C-D2-0122 groÃŸ-One Size
 T-700B2C-D2-0122 klein-One Size
-T-700B2C-D3-0321 groß-One Size
+T-700B2C-D3-0321 groÃŸ-One Size
 T-700B2C-D3-0321 klein-One Size
-T-700B2C-D4-0324 groß-One Size
+T-700B2C-D4-0324 groÃŸ-One Size
 T-700B2C-D4-0324 klein-One Size
-T-700B2C-D5-0325 groß-One Size
+T-700B2C-D5-0325 groÃŸ-One Size
 T-700B2C-D5-0325 klein-One Size
 T-700B2C-D6-0323-One Size
-T-700B2C-D7-0421 groß-One Size
+T-700B2C-D7-0421 groÃŸ-One Size
 T-700B2C-D7-0421 klein-One Size
-T-700B2C-D8-0422 groß-One Size
+T-700B2C-D8-0422 groÃŸ-One Size
 T-700B2C-D8-0422 klein-One Size
 T-700KF-14172_SP_Brust-One Size
 T-700KF-14172_SP_Name-One Size
 T-700KF-14172_SP_Pfeil-One Size
-T-700KF-14172_SP_Rücken-One Size
+T-700KF-14172_SP_RÃ¼cken-One Size
 T-700KF-14939_asecos-One Size
 T-700KF-15459_SP.Bank.B-One Size
 T-700KF-16661_GvEBeanie-One Size
@@ -11562,30 +11467,30 @@ T-700KF-18490_TWLRev_R-One Size
 T-700KF-18490_TWL_Name-One Size
 T-700KF-18490_TWL_Nummer-One Size
 T-700KF-18625_Huetter-One Size
-T-700KF-18799_TVHösel-One Size
+T-700KF-18799_TVHÃ¶sel-One Size
 T-700KF-18861_Gorillalines-One Size
 T-700KF-18861_Staff-One Size
 T-700KF-19545_K.Brust_Black-One Size
 T-700KF-19545_K.Brust_Ref-One Size
-T-700KF-19545_K_Rück_Black-One Size
-T-700KF-19545_K_Rück_Ref-One Size
-T-701K-Ammerländer Stickabz-One Size
+T-700KF-19545_K_RÃ¼ck_Black-One Size
+T-700KF-19545_K_RÃ¼ck_Ref-One Size
+T-701K-AmmerlÃ¤nder Stickabz-One Size
 T-701K-GEA-One Size
-T-702MF-04976 UOS weiß-One Size
+T-702MF-04976 UOS weiÃŸ-One Size
 T-702MF-16661_Motesque-One Size
-"T-702MR-Herz 2,5*2 cm-One Size"
-"T-702MR-Kuss 4*2,5 cm-One Size"
-"T-702MR-Mute 3,3*4 cm-One Size"
-"T-702MR-Planeten 12*6,6 cm-One Size"
-"T-702MR-Smile 8*2,5 cm-One Size"
-"T-702MR-Stern 2,6*2,5 cnm-One Size"
-"T-702MR-Wearingisceari 5*1,7-One Size"
-"T-702MR-Zipper 10*2,9 cm-One Size"
-T-800-Knöpfe ändern-One Size
+T-702MR-Herz 2,5*2 cm-One Size
+T-702MR-Kuss 4*2,5 cm-One Size
+T-702MR-Mute 3,3*4 cm-One Size
+T-702MR-Planeten 12*6,6 cm-One Size
+T-702MR-Smile 8*2,5 cm-One Size
+T-702MR-Stern 2,6*2,5 cnm-One Size
+T-702MR-Wearingisceari 5*1,7-One Size
+T-702MR-Zipper 10*2,9 cm-One Size
+T-800-KnÃ¶pfe Ã¤ndern-One Size
 T-801-Size Label-One Size
 T-802-Manufacturer Label-One Size
 T-804-Brusttasche-One Size
-T-805-Bügeln-One Size
+T-805-BÃ¼geln-One Size
 T-806-Special packing-One Size
 T-807-Artikel Kontrolle-One Size
 T-808-Special position-One Size
@@ -11594,15 +11499,8 @@ T-810-Artikel Kontrolle-One Size
 T-810-fire red-One Size
 T-810-it's all for you-One Size
 T-810-navy-One Size
-W-1010-Sortiment-One Size
-W-1011-Sortiment-One Size
 W-1012-Sortiment-One Size
-W-1052-red-br.green-One Size
-W-1055-Made in Green-One Size
 W-1055-Plaudertasche-One Size
-W-1055-it's all for you-One Size
-W-1055-work wear-One Size
-W-1075-Sortiment-One Size
 W-1077-Sortiment-One Size
 W-1090-Sortiment-One Size
 W-1100-Smily-One Size
@@ -11611,8 +11509,6 @@ W-1131-Sortiment-One Size
 W-1150-kelly green-One Size
 W-1152-black-One Size
 W-1160-Sortiment-One Size
-W-1162-Sortiment-One Size
-W-1163-Sortiment-One Size
 W-1168-Sortiment-One Size
 W-1180-Sortiment-One Size
 W-1192-light grey-One Size
@@ -11620,17 +11516,19 @@ W-1196-Sortiment-One Size
 W-1197-Sortiment-One Size
 W-1198-Sortiment-One Size
 W-1199-Sortiment-One Size
-W-1220-Sortiment-One Size
+W-1221-Sortiment-One Size
+W-1222-Sortiment-One Size
+W-1223-Sortiment-One Size
+W-1224-Sortiment-One Size
+W-1225-Sortiment-One Size
+W-1226-Sortiment-One Size
 W-1290-light grey-One Size
 W-1290N-light grey-One Size
 W-1291-light grey-One Size
 W-HRC-BOX-HRC_Box_Hotel_White-One Size
-WARM SOFTSHELL-Sortiment-One Size
 XO-Kordel-azure blue-One Size
 XO-Kordel-berry-One Size
 XO-Kordel-black-One Size
 XO-Kordel-french navy-One Size
 XO-Kordel-olive-One Size
 XO-Paket-Sortiment-One Size
-Z-ORGANIC-DE-Sortiment-One size
-Z-ORGANIC-G-Sortiment-one size

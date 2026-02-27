@@ -134,10 +134,11 @@ After running the tool, check the `data/output` folder. You will see files like:
 | **SKUs** | `SKU - *.csv` | Product variants, EANs, and keywords. |
 | **Articles** | `ARTICLE - *.csv` | Main product details and descriptions. |
 | **Prices** | `PRICELIST - *.csv` | Base prices, price scales, and validity dates. |
-| **Stock** | `STOCK - *.csv` | Current warehouse stock levels. | Stock data come from fet_user.V_STOCK/fet_user.V_Promodoro_STOCK
+| **Stock** | `STOCK - *.csv` | Current warehouse stock levels (from `fet_user.V_STOCK` & `fet_user.V_Promodoro_STOCK`). |
 | **Orders** | `CONTRACT - *.csv` | Order and contract information. |
-    * Business_Partner data come from fet_user.FET_BUSINESSPARTNER, [fet_user].[FET_CUSTOMER], fet_user.V_CUSTOMER, fet_user.FET_SUPPLIER
- 
+| **Business Partners** | `BUSINESS_PARTNER*.csv` | Customers, suppliers, addresses, and contacts. Includes intelligent Accounting calculation mapping (International IBAN cleanup + BIC lookups via Bundesbank offline checks and caching). |
+
+*Note: Business Partner data comes from `fet_user.FET_BUSINESSPARTNER`, `[fet_user].[FET_CUSTOMER]`, `fet_user.V_CUSTOMER`, and `fet_user.FET_SUPPLIER`.*
 
 ---
 

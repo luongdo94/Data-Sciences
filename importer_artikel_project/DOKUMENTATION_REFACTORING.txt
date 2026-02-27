@@ -1,0 +1,207 @@
+DOKUMENTATION - REFACTORING ZU KLASSENBASIERTER STRUKTUR - VOLLSTÄNDIGE
+===========================================================================
+Datum: 18.02.2026
+
+1. EINFÜHRUNG
+-------------
+Dieses Dokument listet ALLE Methoden der neuen Importer-Klassen auf.
+
+2. KLASSE: ArticleImporter (src/article_importer_class.py)
+----------------------------------------------------------
+Zuständig für Artikelstammdaten, Texte, Preise und Varianten.
+
+Methoden:
+- __init__(self, diff=None, diff1=None):
+    Initialisiert den Importer, erstellt Output-Verzeichnisse und lädt optional Diff-Listen.
+
+- update_sku(self):
+    Importiert aktualisierte SKU-Daten basierend auf `get_sku_update.sql`.
+
+- import_sku_basis(self):
+    Importiert die Basisdaten für SKUs (Neuanlage).
+
+- import_sku_classification(self):
+    Importiert Merkmale (Classification) für SKUs.
+
+- import_sku_text(self):
+    Importiert deutsche Artikeltexte für SKUs.
+
+- import_sku_text_en(self):
+    Importiert englische Artikeltexte für SKUs.
+
+- import_sku_variant(self):
+    Importiert Variantenverknüpfungen für SKUs.
+
+- import_sku_keyword(self):
+    Importiert Schlüsselwörter für SKUs.
+
+- import_sku_ean(self):
+    Importiert EAN-Codes für SKUs.
+
+- import_sku_gebinde(self):
+    Importiert Gebindedaten (Verpackungseinheiten).
+
+- import_artikel_basis(self):
+    Importiert Basisdaten für Artikel (auf ArtNr-Ebene).
+
+- import_artikel_classification(self):
+    Importiert Merkmale für Artikel.
+
+- import_artikel_zuordnung(self):
+    Importiert Artikel-Zuordnungen.
+
+- import_artikel_keyword(self):
+    Importiert Schlüsselwörter für Artikel.
+
+- import_artikel_text(self):
+    Importiert deutsche Texte für Artikel.
+
+- import_artikel_text_en(self):
+    Importiert englische Texte für Artikel.
+
+- import_artikel_variant(self):
+    Importiert Variantenverknüpfungen für Artikel.
+
+- import_artikel_pricestaffeln(self):
+    Importiert Preisstaffeln für Artikel.
+
+- import_artikel_preisstufe_3_7(self):
+    Importiert Preise der Stufen 3 bis 7.
+
+- import_artikel_basicprice(self):
+    Importiert Basispreise.
+
+Interne Hilfsmethoden:
+- _resolve_diff(self, diff_val, diff_name): Lädt Diff-Listen.
+- _load_query(self, filename): Lädt SQL aus Datei.
+- _save_csv(self, df, filename, data_type="ARTICLE"): Speichert CSV mit Header.
+- _process_text_df(self, df, id_col, lang, delete_texts, filename_prefix): Verarbeitet Text-DataFrames.
+- _add_care_instruction_keywords(self, file_path): Fügt Pflegehinweise hinzu.
+- _generate_validity_csv(self, type_filter, output_filename, is_staffel=False): Generiert Validity-Dateien für Preise.
+
+3. KLASSE: OrderImporter (src/order_importer_class.py)
+------------------------------------------------------
+Zuständig für Aufträge und Auftragspositionen.
+
+Methoden:
+- __init__(self): Initialisierung.
+
+- import_order(self):
+    Importiert Kopfdaten von Aufträgen.
+
+- import_order_pos(self):
+    Importiert Positionen von Aufträgen.
+
+- import_order_are_15(self):
+    Importiert Aufträge mit Bedingung 'are_15'.
+
+- import_order_pos_are_15(self):
+    Importiert Auftragspositionen mit Bedingung 'are_15'.
+
+- import_order_classification(self): noch offen
+
+Interne Hilfsmethoden:
+- _load_query(self, filename): Lädt SQL.
+- _save_csv(self, df, filename, data_type="CONTRACT"): Speichert CSV.
+- _decode_clerk(self, val): Dekodiert Sachbearbeiter-Namen (utf-16-le).
+- _create_empty_csv(self, filename, columns, data_type="CONTRACT"): Erstellt leere Datei mit Header.
+
+4. KLASSE: StockImporter (src/stock_importer_class.py)
+------------------------------------------------------
+Zuständig für Bestandsdaten (Lager).
+
+Methoden:
+- __init__(self, diff_areas=None): Initialisierung.
+
+- import_stock_lager(self):
+    Führt `get_lager.sql` aus und erstellt 3 Dateien:
+    1. STOCK - Lager.csv (Hauptbestand)
+    2. STOCKARTICLE_PRIORITY_AREA (Prioritätsplätze)
+    3. Stockarticle_LocDef (Stellplatzdefinitionen)
+
+Interne Hilfsmethoden:
+- _resolve_diff_areas(self, areas): Lädt Filter für Lagerbereiche.
+- _load_query(self, filename): Lädt SQL.
+- _save_csv(self, df, filename, data_type="STOCK"): Speichert CSV.
+
+5. KLASSE: BusinessPartnerImporter (src/bp_importer_class.py)
+-------------------------------------------------------------
+Zuständig für Geschäftspartner und Adressen.
+
+Methoden:
+- __init__(self, diff_partner_ids=None): Initialisierung.
+
+- import_business_customer(self):
+    Importiert Kunden und splittet sie in "Mitarbeiter" (MA) und normale Partner.
+
+- import_business_supplier(self):
+    Importiert Lieferanten.
+
+- import_customer_communication(self):
+    Importiert Telefon, Fax und URL Daten.
+
+- import_customer_address(self):
+    Importiert Adressdaten. Jede Adresse wird 8-fach dupliziert (address_type 1-8).
+    Logic für defaultRoleDef:
+    - Typ 2: defaultRoleDef = 1
+    - Typ 3: 0 wenn abs(isRechnungPDF)=1, sonst 1
+    - Andere Typen (1, 4-8): defaultRoleDef = 0
+
+- import_customer_contact(self):
+    Importiert Ansprechpartner-Daten.
+
+- import_customer_keyword(self):
+    Importiert Schlüsselwörter für Kunden.
+
+- import_supplier_communication(self):
+    Importiert Kommunikationsdaten für Lieferanten (Analog zu Customer).
+
+- import_supplier_address(self):
+    Importiert Adressdaten für Lieferanten (Analog zu Customer).
+
+- import_business_customer_accounting(self):
+    Importiert Buchhaltungs- und Bankdaten.
+    Wesentliche Refactoring-Verbesserungen:
+    - Bereinigung von IBANs (Entfernung von Leerzeichen/Sonderzeichen).
+    - Unterstützung aller gültigen internationalen IBAN-Formate (nicht nur DE).
+    - Offline-Fallback für Banknamen, BIC und Ort über das Bundesbank-BLZ-Register (`data/bundesbank_blz_lookup.csv`).
+    - 3-stufige BIC- und Banknamen-Ermittlungslogik (Quelldaten -> Bundesbank -> schwifty) mit In-Memory Caching für maximale Performance.
+
+Interne Hilfsmethoden:
+- _resolve_diff_ids(self, ids): Lädt ID-Filter.
+- _load_query(self, filename): Lädt SQL.
+- _fetch_data(self, sql_filename, filter_col): Führt Query aus und filtert.
+- _save_csv(self, df, filename, data_type="BUSINESS_PARTNER"): Speichert CSV.
+- _normalize_common_fields(self, df): Standardisiert Sprachen und IDs.
+- _get_tax_def(self, country_code): Bestimmt Steuerdefinition (Inland/EU/Drittland).
+
+6. SHARED UTILITIES (src/database.py)
+-------------------------------------
+- save_fetcsv(df, file_path, data_type): Speichert mit FETCSV Header.
+- read_fetcsv(file_path, **kwargs): Liest FETCSV (überspringt Header).
+- read_csv_file(file_path, ...): Wrapper für read_fetcsv.
+
+7. ÄNDERUNGEN IM VERGLEICH ZUR FUNKTIONSBASIERTEN VERSION
+---------------------------------------------------------
+Dieses Kapitel fasst die wesentlichen Unterschiede zwischen der alten (`simple_article_importer.py`) und der neuen Architektur zusammen.
+
+A. ARCHITEKTUR & STRUKTUR
+   - ALT: Monolithisches Skript. Alle Funktionen in einer Datei. Hohe Kopplung. Verwirrende Abhängigkeiten.
+   - NEU: Aufteilung in 4 domänenspezifische Klassen (`Article`, `Order`, `Stock`, `BusinessPartner`). Jede Klasse hat eine klare Verantwortung (Single Responsibility Principle).
+
+B. DATENHALTUNG (STATE)
+   - ALT: Globale Variablen oder Parameter-Passing durch viele Ebenen.
+   - NEU: Instanzvariablen (`self.conn`, `self.output_dir`) verwalten den Zustand. Datenbankverbindungen werden bei Bedarf geöffnet und sauber geschlossen.
+
+C. CSV-EXPORT & HEADER
+   - ALT: Jede Import-Funktion rief `df.to_csv()` manuell auf. Inkonsistenzen bei Trennzeichen, Encoding und Header waren häufig.
+   - NEU: Alle Exporte laufen zentral über `src/database.py: save_fetcsv()`.
+     -> Dies garantiert `FETCSV VERSION 1` Header in JEDER Datei.
+     -> Einheitliches Encoding `utf-8-sig` und Trennzeichen `;`.
+
+D. WIEDERVERWENDBARKEIT
+   - ALT: SQL-Loading-Code wurde in jeder Funktion dupliziert.
+   - NEU: `_load_query(filename)` ist eine Methode der Importer-Klassen.
+
+E. KOMPATIBILITÄT
+   - Die Datei `simple_article_importer.py` wurde zu einer Adapter-Schicht umgebaut. Sie leitet Aufrufe an die neuen Klassen weiter, um Abwärtskompatibilität zu sichern.

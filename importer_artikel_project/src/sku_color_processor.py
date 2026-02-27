@@ -1,7 +1,7 @@
 import pandas as pd
 import pyodbc
-import re
 from src.config import OUTPUT_DIR, MDB_DATA
+from src.database import read_csv_file, save_fetcsv
 
 def extract_color(sku):
     if not isinstance(sku, str):
@@ -13,15 +13,15 @@ def extract_color(sku):
         return color_part.lower()
     return None
 
-def process_colors(csv_file_path=None, sku_column='aid'):
+def process_colors(csv_file_path=None, sku_column='aid', data_type="ARTICLE"):
     if csv_file_path is None:
         csv_file_path = OUTPUT_DIR / "skus.csv"
         
     conn_str = f"DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};DBQ={MDB_DATA};"
 
     try:
-        # Read original data
-        original_df = pd.read_csv(csv_file_path, encoding='utf-8-sig', sep=';', dtype=str)
+        # Read original data using the FET-aware reader
+        original_df = read_csv_file(csv_file_path, dtype=str)
         
         # Get original column order
         original_columns = original_df.columns.tolist()
@@ -39,9 +39,11 @@ def process_colors(csv_file_path=None, sku_column='aid'):
         sku_column_name = sku_column if sku_column else 'aid'
         
         if sku_column_name not in original_df.columns:
+            # Fallback for some files that might use different column names
+            # but usually it's passed correctly
             raise ValueError(f"Column '{sku_column_name}' not found in the CSV file")
 
-        # Create a copy for processing, the color will be replaced with the ERP color if it not in ew_Farben
+        # Create a copy for processing
         sku_df = original_df.copy()
         sku_df['temp_color'] = sku_df[sku_column_name].apply(extract_color)
         sku_df['new_color'] = sku_df['temp_color'].map(color_map).fillna(sku_df['temp_color'])
@@ -72,8 +74,8 @@ def process_colors(csv_file_path=None, sku_column='aid'):
         # Maintain original column order
         result_df = result_df[original_columns]
         
-        # Save the file
-        result_df.to_csv(csv_file_path, index=False, encoding='utf-8-sig', sep=';')
+        # Save the file with FETCSV header
+        save_fetcsv(result_df, csv_file_path, data_type)
         
         return result_df
 

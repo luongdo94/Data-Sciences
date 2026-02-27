@@ -1,5 +1,6 @@
 import warnings
 import sys
+import pandas as pd
 from pathlib import Path
 
 # Setup
@@ -8,7 +9,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 sys.path.append(str(Path(__file__).parent.parent))
 
 # Import from the local module since we're already in the src directory
-
+from src.database import read_csv_file, save_fetcsv
 from src.article_importer_class import ArticleImporter
 from src.order_importer_class import OrderImporter
 from src.stock_importer_class import StockImporter
@@ -125,10 +126,10 @@ def process_sku_data():
             # For validity files, ensure 'aktiv' column is removed
             if 'validity' in str(price_file).lower():
                 try:
-                    df = pd.read_csv(price_file, sep=';', dtype=str)
+                    df = read_csv_file(price_file, dtype=str)
                     if 'aktiv' in df.columns:
                         df = df.drop(columns=['aktiv'])
-                        df.to_csv(price_file, index=False, sep=';', encoding='utf-8-sig')
+                        save_fetcsv(df, price_file, "ARTICLE")
                 except Exception as e:
                     print(f"Warning: Could not process {price_file}: {e}")
             output_files.append((price_file, final_name))
@@ -229,38 +230,35 @@ def process_order_data():
     except Exception as e:
         print(f"Error processing order data: {e}")
         import traceback
+        import traceback
         traceback.print_exc()
 
-def main():
+def process_stock_data():
+    print("\n=== Processing Stock Data ===")
     try:
-        # Process SKU data
-        process_sku_data()
-        # Process Article data
-        process_article_data()
-        # Process Order data
-        process_order_data()
-        
-        # Process Stock and Partner data
-        print("\n=== Processing Stock and Partner Data ===")
-        # Process Stock/Lager
-        try:
-            stock_importer = StockImporter()
-            stock_files = stock_importer.import_stock_lager()
-            if stock_files:
-                for file_path in stock_files:
-                    if file_path and Path(file_path).exists():
-                        print(f"[OK] Stock data exported: {file_path.name}")
-        except Exception as e:
-            print(f"[ERROR] Stock import failed: {e}")
-                    
-        # Process Business Partner
-        print("\n=== Processing Business Partner Data ===")
+        stock_importer = StockImporter()
+        stock_files = stock_importer.import_stock_lager()
+        if stock_files:
+            for file_path in stock_files:
+                if file_path and Path(file_path).exists():
+                    print(f"[OK] Stock data exported: {file_path.name}")
+    except Exception as e:
+        print(f"[ERROR] Stock import failed: {e}")
+
+def process_business_partner_data():
+    print("\n=== Processing Business Partner Data ===")
+    try:
         bp_importer = BusinessPartnerImporter()
         
         # Main Partner Data
-        partner_file = bp_importer.import_business_partner()
+        partner_file = bp_importer.import_business_customer()
         if partner_file and Path(partner_file).exists():
-             safe_rename(partner_file, OUTPUT_DIR / "BUSINESS_PARTNER_IMPORT.csv", "BUSINESS_PARTNER_IMPORT.csv")
+             safe_rename(partner_file, OUTPUT_DIR / "BUSINESS_PARTNER_CUSTOMER.csv", "BUSINESS_PARTNER_CUSTOMER.csv")
+
+        # Accounting Partner Data
+        accounting_file = bp_importer.import_business_customer_accounting()
+        if accounting_file and Path(accounting_file).exists():
+             print(f"[OK] Accounting partner data exported: {accounting_file.name}")
 
         # Supplier Data
         supplier_file = bp_importer.import_business_supplier()
@@ -268,17 +266,67 @@ def main():
             print(f"[OK] Supplier data exported: {supplier_file.name}")
             
         # Address Data
-        address_file = bp_importer.import_address()
+        address_file = bp_importer.import_customer_address()
         if address_file and Path(address_file).exists():
             print(f"[OK] Address data exported: {address_file.name}")
             
-        # Communication Data
-        comm_files = bp_importer.import_communication()
+        # Contact Data
+        contact_file = bp_importer.import_customer_contact()
+        if contact_file and Path(contact_file).exists():
+            print(f"[OK] Contact data exported: {contact_file.name}")
+
+        # Keyword Data
+        keyword_file = bp_importer.import_customer_keyword()
+        if keyword_file and Path(keyword_file).exists():
+            print(f"[OK] Keyword data exported: {keyword_file.name}")
+            
+        comm_files = bp_importer.import_customer_communication()
         if comm_files:
             for f in comm_files:
                 if f and Path(f).exists():
                      print(f"[OK] Communication data exported: {f.name}")
-             
+        
+        # Contact Communication Data
+        contact_comm_files = bp_importer.import_customer_contact_communication()
+        if contact_comm_files:
+            for f in contact_comm_files:
+                if f and Path(f).exists():
+                     print(f"[OK] Contact Communication data exported: {f.name}")
+        
+        # Contact Role Data
+        role_files = bp_importer.import_customer_employee_role()
+        if role_files:
+            for f in role_files:
+                if f and Path(f).exists():
+                     print(f"[OK] Contact Role data exported: {f.name}")
+        
+        # Supplier Communication Data
+        sup_comm_files = bp_importer.import_supplier_communication()
+        if sup_comm_files:
+            for f in sup_comm_files:
+                if f and Path(f).exists():
+                     print(f"[OK] Supplier Communication data exported: {f.name}")
+
+        # Supplier Address Data
+        sup_address_file = bp_importer.import_supplier_address()
+        if sup_address_file and Path(sup_address_file).exists():
+            print(f"[OK] Supplier Address data exported: {sup_address_file.name}")
+    except Exception as e:
+        print(f"[ERROR] Business Partner import failed: {e}")
+
+def main():
+    try:
+        # Process SKU data
+        #process_sku_data()
+        # Process Article data
+        #process_article_data()
+        # Process Order data
+        #process_order_data()
+        # Process Stock Data
+        #process_stock_data()
+        # Process Business Partner Data
+        process_business_partner_data()
+        
         print("\nAll data processing completed successfully!")
     except Exception as e:
         print(f"Error: {e}")

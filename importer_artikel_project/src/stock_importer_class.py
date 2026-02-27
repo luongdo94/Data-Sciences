@@ -1,7 +1,7 @@
 
 import pandas as pd
 from pathlib import Path
-from src.database import execute_query
+from src.database import execute_query, save_fetcsv
 from src.config import OUTPUT_DIR, SQL_DIR
 
 class StockImporter:
@@ -34,11 +34,11 @@ class StockImporter:
             return None
         return sql_path.read_text(encoding='utf-8')
 
-    def _save_csv(self, df, filename):
-        """Standardized CSV export"""
+    def _save_csv(self, df, filename, data_type="STOCK"):
+        """Standardized CSV export with FETCSV header"""
         if df is not None and not df.empty:
             out_path = self.output_dir / filename
-            df.to_csv(out_path, index=False, encoding='utf-8-sig', sep=';')
+            save_fetcsv(df, out_path, data_type)
             print(f"Exported {len(df)} records to: {out_path}")
             return out_path
         return None

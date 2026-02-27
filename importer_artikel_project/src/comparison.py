@@ -3,7 +3,7 @@ import logging
 from typing import Set, Tuple
 from datetime import datetime
 import pandas as pd
-from .database import read_csv_file
+from .database import read_csv_file, save_fetcsv
 
 def compare_columns(
     file_path: Path,
@@ -44,12 +44,12 @@ def compare_columns(
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_file = output_dir / f"{col1}_not_in_{col2}_{timestamp}.csv"
 
-        # Save results if any differences found
+    # Save results if any differences found
         if diff:
             result_df = pd.DataFrame({
                 f'{col1}_not_in_{col2}': sorted(diff)
             })
-            result_df.to_csv(output_file, index=False, encoding=encoding, sep=delimiter)
+            save_fetcsv(result_df, output_file, "DIFFERENCE_REPORT")
             logger.info(f'Results saved to: {output_file}')
         else:
             logger.info('No differences found')

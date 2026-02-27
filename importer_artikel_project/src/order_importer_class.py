@@ -2,7 +2,7 @@
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
-from src.database import execute_query
+from src.database import execute_query, save_fetcsv
 from src.config import OUTPUT_DIR, SQL_DIR
 
 class OrderImporter:
@@ -24,11 +24,11 @@ class OrderImporter:
             return None
         return sql_path.read_text(encoding='utf-8-sig').strip() # Using utf-8-sig as in original code
 
-    def _save_csv(self, df, filename):
-        """Standardized CSV export"""
+    def _save_csv(self, df, filename, data_type="CONTRACT"):
+        """Standardized CSV export with FETCSV header"""
         if df is not None and not df.empty:
             out_path = self.output_dir / filename
-            df.to_csv(out_path, index=False, encoding='utf-8-sig', sep=';')
+            save_fetcsv(df, out_path, data_type)
             print(f"Exported {len(df)} records to: {out_path}")
             return out_path
         return None
@@ -36,10 +36,10 @@ class OrderImporter:
     def _decode_clerk(self, val):
         return val.decode('utf-16-le') if isinstance(val, bytes) else str(val)
 
-    def _create_empty_csv(self, filename, columns):
+    def _create_empty_csv(self, filename, columns, data_type="CONTRACT"):
         """Creates an empty CSV file with headers if no data is found (as per original logic)"""
         out_path = self.output_dir / filename
-        pd.DataFrame(columns=columns).to_csv(out_path, index=False, encoding='utf-8-sig', sep=';')
+        save_fetcsv(pd.DataFrame(columns=columns), out_path, data_type)
         print(f"Created empty file: {out_path}")
         return out_path
 
@@ -220,7 +220,7 @@ class OrderImporter:
         # But for strict refactoring we just implement logic)
         
         # Let's call our own method for the pos part to avoid duplicate code
-        self.import_order_pos() 
+        # self.import_order_pos() # Redundant call removed
         # Note: Original code executed get_orderpos.sql and saved it. calling self.import_order_pos() does exactly that.
 
         # 2. Main Classification Query
